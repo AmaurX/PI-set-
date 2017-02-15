@@ -32,8 +32,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     private boolean[] deck = new boolean[81];
-    private int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};
-    private HashMap<Integer, Integer> tas = new HashMap<Integer, Integer>();
+    private int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
+    private HashMap<Integer, Integer> tas = new HashMap<Integer, Integer>();    //lie l'adresse au numéro de la carte (1 a 15)
     private int nbCarte = 12;
 
     private Stack<Integer> selected = new Stack<Integer>();
@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
             flag = deck[numberOfTheCard];
         }
         deck[numberOfTheCard] = true;
-        table[tas.get(addresse)] = numberOfTheCard;
+        table[tas.get(addresse)] = k;
         ImageView button = (ImageView) findViewById(addresse);
 
         CardDrawable nouvelleCard = new CardDrawable(k);
@@ -113,16 +113,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+
     public void selection(View view) {
         int id = view.getId();
 
         selected.push(id);
+        //mettre un travail sur CardDrawable avec changement méthode isSelected, puis on dit que Imageview est invalidate et donc changement
         if (selected.size() >= 3) {
             traiterMatch();        //Doit-on enlever la précédente avant d'en mettre une nouvelle?
         }
     }
 
-    public void clearCarte(int addresse) {
+    public void clearCarte(int addresse) {                                 //Opérationnelle
         ImageView carte1 = (ImageView) findViewById(addresse);
         carte1.setImageDrawable(null);
         carte1.invalidate();
@@ -132,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
         Integer a = selected.pop();
         Integer b = selected.pop();
         Integer c = selected.pop();
-        if (Cards.isSet(a, b, c)) {
+        if (Cards.isSet(table[tas.get(a)], table[tas.get(b)], table[tas.get(c)])) {
 
 
             //Incrémentation du compteur du joueur et dernier set attrapé
@@ -151,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
         } else {
-
+            selected.removeAllElements();
             //Désincrémentation du compteur du joueur et dernier set attrapé
 
         }

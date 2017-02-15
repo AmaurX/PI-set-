@@ -23,10 +23,14 @@ class CardDrawable extends Drawable {
      */
     private static final float SHAPE_PADDING = 0.125F;
 
-    /** Basic spacing step between concentric shapes. */
+    /**
+     * Basic spacing step between concentric shapes.
+     */
     private static final float CONCENTRIC_STEP = 6.0F;
 
-    /** The card to draw. */
+    /**
+     * The card to draw.
+     */
     private int card;
 
     /**
@@ -58,6 +62,7 @@ class CardDrawable extends Drawable {
 
     /**
      * Creates a drawable that draws the specified card.
+     *
      * @param card the card to draw
      */
     CardDrawable(int card) {
@@ -74,13 +79,14 @@ class CardDrawable extends Drawable {
     /**
      * Sets the card to draw. If any view is displaying the drawable,
      * it should be invalidated.
+     *
      * @param card the card to draw
      */
     void setCard(int card) {
         this.card = card;
     }
 
-    public void isSelected(boolean selection){
+    public void isSelected(boolean selection) {
         selected = selection;
     }
 
@@ -97,33 +103,40 @@ class CardDrawable extends Drawable {
         paint.setAlpha(alpha);
         paint.setStyle(Paint.Style.STROKE);
         canvas.drawRect(b, paint);
-         // if(selected)
-         //    paint.setColorFilter(new ColorFilter());
-         //   }
+        if (selected) {
+            paint.setColorFilter(new ColorFilter());
+        }
 
         /* Pick a color. */
-        switch (Cards.colorOf(card)) {
-        case 1:
-            paint.setColor(0xFF882222);
-            break;
-        case 2:
-            paint.setColor(0xFF228822);
-            break;
-        case 3:
-            paint.setColor(0xFF222288);
-            break;
-        default:
-            throw new IllegalStateException("Illegal color characteristic.");
+        switch (Cards.colorOf(card))
+
+        {
+            case 1:
+                paint.setColor(0xFF882222);
+                break;
+            case 2:
+                paint.setColor(0xFF228822);
+                break;
+            case 3:
+                paint.setColor(0xFF222288);
+                break;
+            default:
+                throw new IllegalStateException("Illegal color characteristic.");
         }
+
         paint.setAlpha(alpha);
 
-        /* Draw shapes. */
+    /* Draw shapes. */
         int n = Cards.numberOf(card);
         float hPadding = b.width() * SHAPE_PADDING;
         float vPadding = b.height() * SHAPE_PADDING;
         float h = (b.height() - (n + 1) * vPadding) / 3.0F;
         float t = b.top + (b.height() - n * h - (n - 1) * vPadding) / 2.0F;
-        for (int i = 0; i < n; ++i) {
+        for (
+                int i = 0;
+                i < n; ++i)
+
+        {
             /*
              * Reset the Rect r as it may have been overriden in
              * drawShape(). We also keep the variable t local for the
@@ -135,72 +148,76 @@ class CardDrawable extends Drawable {
             r.bottom = t + h;
             t = r.bottom + vPadding;
             drawShapeWithFilling(canvas,
-                                 Cards.fillingOf(card), Cards.shapeOf(card));
+                    Cards.fillingOf(card), Cards.shapeOf(card));
         }
+
     }
 
     /**
      * Draws a single shape with the specified filling.
-     * @param canvas the canvas on which to draw
+     *
+     * @param canvas  the canvas on which to draw
      * @param filling the filling characteristic to draw
-     * @param shape the shape characteristic to draw
+     * @param shape   the shape characteristic to draw
      */
     private void drawShapeWithFilling(Canvas canvas, int filling, int shape) {
         switch (filling) {
-        case 1:
-            paint.setStyle(Paint.Style.STROKE);
-            drawShape(canvas, shape);
-            break;
-        case 2:
+            case 1:
+                paint.setStyle(Paint.Style.STROKE);
+                drawShape(canvas, shape);
+                break;
+            case 2:
             /*
              * For intermediate filling, we draw concentric copies of
              * the same shape.
              */
-            paint.setStyle(Paint.Style.STROKE);
-            float w = r.width() / 2.0F;
-            float u = CONCENTRIC_STEP * (r.height() / r.width());
-            for (float i = 0; i < w; i += CONCENTRIC_STEP) {
+                paint.setStyle(Paint.Style.STROKE);
+                float w = r.width() / 2.0F;
+                float u = CONCENTRIC_STEP * (r.height() / r.width());
+                for (float i = 0; i < w; i += CONCENTRIC_STEP) {
+                    drawShape(canvas, shape);
+                    r.left += CONCENTRIC_STEP;
+                    r.top += u;
+                    r.right -= CONCENTRIC_STEP;
+                    r.bottom -= u;
+                }
+                break;
+            case 3:
+                paint.setStyle(Paint.Style.FILL);
                 drawShape(canvas, shape);
-                r.left += CONCENTRIC_STEP;
-                r.top += u;
-                r.right -= CONCENTRIC_STEP;
-                r.bottom -= u;
-            }
-            break;
-        case 3:
-            paint.setStyle(Paint.Style.FILL);
-            drawShape(canvas, shape);
-            break;
-        default:
-            throw new IllegalArgumentException(
-                "Illegal filling characteristic.");
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        "Illegal filling characteristic.");
         }
     }
 
     /**
      * Draws a single shape.
+     *
      * @param canvas the canvas on which to draw
-     * @param shape the shape characteristic to draw
+     * @param shape  the shape characteristic to draw
      */
     private void drawShape(Canvas canvas, int shape) {
         switch (shape) {
-        case 1:
-            canvas.drawOval(r, paint);
-            break;
-        case 2:
-            canvas.drawRect(r, paint);
-            break;
-        case 3:
-            drawDiamond(canvas);
-            break;
-        default:
-            throw new IllegalArgumentException(
-                "Illegal shape characteristic.");
+            case 1:
+                canvas.drawOval(r, paint);
+                break;
+            case 2:
+                canvas.drawRect(r, paint);
+                break;
+            case 3:
+                drawDiamond(canvas);
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        "Illegal shape characteristic.");
         }
     }
 
     /**
      * Draws a diamond shape within the specified rectangle.
+     *
      * @param canvas the canvas on which to draw
      */
     private void drawDiamond(Canvas canvas) {
