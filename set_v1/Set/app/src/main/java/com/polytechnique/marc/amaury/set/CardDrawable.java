@@ -1,5 +1,6 @@
 package com.polytechnique.marc.amaury.set;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
@@ -17,6 +18,16 @@ import android.graphics.drawable.Drawable;
  * A drawable graphical representation of a Set! card.
  */
 class CardDrawable extends Drawable {
+
+    /**
+     * Ajout par Amaury
+     * on rajoute canva et bitmap en attribut pour les recuperer...
+     *
+     * **/
+    public Bitmap bitmap;
+    public Canvas canvas;
+    private final Paint selectionPaint = new Paint();
+    private final RectF selectionRectangle = new RectF();
     /**
      * Padding between shapes of a same card, as well as between
      * shapes and borders; expressed as a fraction of the bounding
@@ -27,7 +38,7 @@ class CardDrawable extends Drawable {
     /**
      * Basic spacing step between concentric shapes.
      */
-    private static final float CONCENTRIC_STEP = 6.0F;
+    private static final float CONCENTRIC_STEP = 15.0F;
 
     /**
      * The card to draw.
@@ -69,6 +80,11 @@ class CardDrawable extends Drawable {
     CardDrawable(int card) {
         this.card = card;
     }
+    CardDrawable(int card, Bitmap bitmap) {
+        this.card = card;
+        this.bitmap = bitmap;
+        this.canvas = new Canvas(this.bitmap);
+    }
 
     /**
      * @returns the card drawn by this drawable
@@ -95,8 +111,14 @@ class CardDrawable extends Drawable {
         return selected;
     }
 
+    public void customDraw(){
+        this.draw(this.canvas);
+    }
+
     @Override
     public void draw(Canvas canvas) {
+
+        canvas.drawColor(Color.WHITE);
         if (card == 0)
             return;
 
@@ -104,14 +126,24 @@ class CardDrawable extends Drawable {
         int alpha = paint.getAlpha();
 
         /* Draw border or background. */
-        paint.setColor(Color.DKGRAY);
-        paint.setAlpha(alpha);
-        paint.setStyle(Paint.Style.STROKE);
-        canvas.drawRect(b, paint);
+
         if (selected) {
-            paint.setColorFilter(new LightingColorFilter(0xffff0000,0xffff0000));  //Cela change couleur à la selection mais pas comme je veux ...
+            paint.setColor(Color.RED);
+        }
+        else{
+            paint.setColor(Color.DKGRAY);
         }
 
+
+        paint.setAlpha(alpha);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(10);
+        canvas.drawRect(b, paint);
+
+
+
+
+        paint.setStrokeWidth(3);
         /* Pick a color. */
         switch (Cards.colorOf(card))
 

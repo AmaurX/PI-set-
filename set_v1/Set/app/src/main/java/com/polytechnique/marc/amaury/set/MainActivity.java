@@ -8,6 +8,8 @@ import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
+import android.os.SystemClock;
+import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -19,6 +21,7 @@ import android.widget.TableLayout;
 import android.widget.TextView;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.Stack;
 
@@ -59,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
     private int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
     private HashMap<Integer, Integer> tas = new HashMap<Integer, Integer>();    //lie l'adresse au numéro de la carte (1 a 15)
     private int nbCarte = 12;
-
+    private HashMap<Integer,CardDrawable> carteSurTable = new HashMap<Integer, CardDrawable>();
     private Stack<Integer> selected = new Stack<Integer>();
 
 
@@ -85,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         for (Integer addresse : tas.keySet()) {
             if (!(addresse.equals(R.id.image15) || addresse.equals(R.id.image14) || addresse.equals(R.id.image13))) {
                 addCard(addresse);
+                System.out.println(addresse.doubleValue());
             }
         }
     }
@@ -107,11 +111,10 @@ public class MainActivity extends AppCompatActivity {
         table[tas.get(addresse)] = k;
         ImageView button = (ImageView) findViewById(addresse);
 
-        CardDrawable nouvelleCard = new CardDrawable(k);
-        Bitmap b = Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(b);
-        nouvelleCard.draw(c);
+        CardDrawable nouvelleCard = new CardDrawable(k, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
+        nouvelleCard.customDraw();
         button.setImageDrawable(nouvelleCard);
+        carteSurTable.put(addresse,nouvelleCard);
         button.invalidate();                     //Etape pour réinitialiser une ImageView
     }
 
@@ -141,22 +144,49 @@ public class MainActivity extends AppCompatActivity {
 
     public void selection(View view) {
         int id = view.getId();
-        ImageView carte = (ImageView) view;
-        CardDrawable card = (CardDrawable) carte.getDrawable();
-        if (card.getSelected()) {                        //Si déjà sélectionné on enlève la sélection
-            //selected.remove(id);                       //Je pense que la double sélection ne fonctionne pas, donc on va faire rien quand carte sélectionné
-            //card.isSelected(false);                //Ne fonctionne pas ...
-            /*clearCarte(id);                        //Ne fonctionne pas non plus ...
-            ImageView carte1 = (ImageView) findViewById(id);
-            carte1.setImageDrawable(new CardDrawable(table[tas.get(id)]));*/
-            return;
-        } else {
-            selected.push(id);
-            card.isSelected(true);
-            carte.invalidate();
-            if (selected.size() >= 3) {
-                traiterMatch();        //Doit-on enlever la précédente avant d'en mettre une nouvelle?
+        System.out.println(id);
+        //ImageView carte = (ImageView) view;
+        try {
+            CardDrawable card = carteSurTable.get(id);
+            System.out.println("LA card est en mode " + card.getSelected());
+            if (card.getSelected()) {
+                System.out.println("je suis dans le if");
+                //Si déjà sélectionné on enlève la sélection
+                selected.remove(new Integer(id));
+                card.isSelected(false);
+                view.invalidate();
+
+                return;
+            } else {
+                selected.push(id);
+                card.isSelected(true);
+                //carte.invalidate();
+                view.invalidate();
+                // En gros invalidate il dis qu'il redraw() la prochaine fois qu'il est en idle... sauf que les commandes suivantes l'empeche de redraw avant que la view recoive un nouveau invalidate dans la fonction traiterMatch
+
+                System.out.println(selected.size());
+                if (selected.size() >= 3) {
+                    Thread thread=  new Thread(){
+                        @Override
+                        public void run(){
+                            try {
+                                synchronized(this){
+                                    wait(1500);
+                                }
+                            }
+                            catch(InterruptedException ex){
+                            }
+                        }
+                    };
+                    thread.start();
+                    view.postInvalidate();
+                    thread.join();
+                    traiterMatch();//Doit-on enlever la précédente avant d'en mettre une nouvelle?
+                }
             }
+        }
+        finally{
+            return;
         }
     }
 
@@ -190,6 +220,20 @@ public class MainActivity extends AppCompatActivity {
 
         } else {
             selected.removeAllElements();
+            CardDrawable card = carteSurTable.get(a);
+            card.isSelected(false);
+            ImageView carte = (ImageView) findViewById(a);
+            carte.invalidate();
+
+            card = carteSurTable.get(b);
+            card.isSelected(false);
+            carte = (ImageView) findViewById(b);
+            carte.invalidate();
+
+            card = carteSurTable.get(c);
+            card.isSelected(false);
+            carte = (ImageView) findViewById(c);
+            carte.invalidate();
             //Désincrémentation du compteur du joueur et dernier set attrapé
 
         }
