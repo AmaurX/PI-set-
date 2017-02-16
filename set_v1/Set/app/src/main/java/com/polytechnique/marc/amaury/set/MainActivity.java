@@ -27,25 +27,12 @@ import java.util.Stack;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView timerTextView;
-    long startTime = 0;
+    ImageView set1;
+    ImageView set2;
+    ImageView set3;
 
-    //runs without a timer by reposting this handler at the end of the runnable
-    Handler timerHandler = new Handler();
-    Runnable timerRunnable = new Runnable() {
 
-        @Override
-        public void run() {
-            long millis = System.currentTimeMillis() - startTime;
-            int seconds = (int) (millis / 1000);
-            int minutes = seconds / 60;
-            seconds = seconds % 60;
 
-            timerTextView.setText(String.format("%d:%02d", minutes, seconds));
-
-            timerHandler.postDelayed(this, 500);
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,8 +52,90 @@ public class MainActivity extends AppCompatActivity {
     private HashMap<Integer,CardDrawable> carteSurTable = new HashMap<Integer, CardDrawable>();
     private Stack<Integer> selected = new Stack<Integer>();
 
+    TextView timerTextView;
+    TextView scoreTextView;
+
+    long startTime = 0;
+
+    long score = -1;
+    boolean add = true;
+
+    Integer addresse;
+    int numeroCarteSet = 0;
+
+    //Time opérationel
+    //runs without a timer by reposting this handler at the end of the runnable
+    Handler timerHandler = new Handler();
+    Runnable timerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long millis = System.currentTimeMillis() - startTime;
+            int seconds = (int) (millis / 1000);
+            int minutes = seconds / 60;
+            seconds = seconds % 60;
+
+            timerTextView.setText(String.format("%d:%02d", minutes, seconds));
+
+            timerHandler.postDelayed(this, 500);
+        }
+    };
+
+    //Score opérationnel
+    Handler scoreHandler = new Handler();
+    Runnable scoreRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (add) score += 1;
+            else score -= 1;
+            scoreTextView.setText(String.format("%s:%02d", "Score", score));
+        }
+    };
+
+    Handler setHandler = new Handler();
+    Runnable setRunnable = new Runnable() {
+        @Override
+        public void run() {
+            CardDrawable nouvelleCard = new CardDrawable(171);
+            //CardDrawable nouvelleCard = new CardDrawable(table[tas.get(addresse)]);
+            Bitmap bit = Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888);
+            Canvas can = new Canvas(bit);
+            nouvelleCard.draw(can);
+            switch (numeroCarteSet) {
+                case 0:
+                    break;
+                case 1:
+                    set1.setImageDrawable(nouvelleCard);
+                    set1.invalidate();
+                    break;
+                case 2:
+                    set2.setImageDrawable(nouvelleCard);
+                    set2.invalidate();
+                    break;
+                case 3:
+                    set3.setImageDrawable(nouvelleCard);
+                    set3.invalidate();
+                    break;
+            }
+        }
+    };
+
 
     public void init() {
+        set1 = (ImageView) findViewById(R.id.set1);
+        numeroCarteSet=1;
+        setHandler.postDelayed(setRunnable,0);
+        set2 = (ImageView) findViewById(R.id.set2);
+        numeroCarteSet=2;
+        setHandler.postDelayed(setRunnable,0);
+        set3 = (ImageView) findViewById(R.id.set3);
+        numeroCarteSet=3;
+        setHandler.postDelayed(setRunnable,0);
+        numeroCarteSet=0;
+        timerTextView = (TextView) findViewById(R.id.time);
+        startTime = System.currentTimeMillis();
+        timerHandler.postDelayed(timerRunnable, 0);
+        scoreTextView = (TextView) findViewById(R.id.score);
+        scoreHandler.postDelayed(scoreRunnable, 0);
         timerTextView = (TextView) findViewById(R.id.time);
         startTime = System.currentTimeMillis();
         timerHandler.postDelayed(timerRunnable, 0);
@@ -204,7 +273,10 @@ public class MainActivity extends AppCompatActivity {
 
 
             //Incrémentation du compteur du joueur et dernier set attrapé
+            add = true;
+            scoreHandler.postDelayed(scoreRunnable, 0);
 
+            afficherDernierSet(a, b, b);
 
             selected.removeAllElements();  // Au cas ou non vide
             if (nbCarte == 15) {
@@ -238,6 +310,21 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+
+    }
+
+    //Non opérationnel
+    public void afficherDernierSet(Integer a, Integer b, Integer c) {
+        addresse = a;
+        numeroCarteSet=1;
+        setHandler.postDelayed(setRunnable, 0);
+        addresse = b;
+        numeroCarteSet=2;
+        setHandler.postDelayed(setRunnable, 0);
+        addresse = c;
+        numeroCarteSet=3;
+        setHandler.postDelayed(setRunnable, 0);
+        numeroCarteSet=0;
 
     }
 }
