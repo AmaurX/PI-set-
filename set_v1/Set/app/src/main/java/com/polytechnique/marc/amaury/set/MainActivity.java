@@ -95,11 +95,11 @@ public class MainActivity extends AppCompatActivity {
     Runnable setRunnable = new Runnable() {
         @Override
         public void run() {
-            CardDrawable nouvelleCard = new CardDrawable(171);
-            //CardDrawable nouvelleCard = new CardDrawable(table[tas.get(addresse)]);
             Bitmap bit = Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888);
-            Canvas can = new Canvas(bit);
-            nouvelleCard.draw(can);
+            CardDrawable nouvelleCard = new CardDrawable(171, bit);
+            //CardDrawable nouvelleCard = new CardDrawable(table[tas.get(addresse)]);
+
+            nouvelleCard.customDraw();
             switch (numeroCarteSet) {
                 case 0:
                     break;
@@ -118,6 +118,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+
 
 
     public void init() {
@@ -212,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 
-    public void selection(View view) {
+    public void selection(final View view) {
         int id = view.getId();
         System.out.println(id);
         //ImageView carte = (ImageView) view;
@@ -231,24 +233,15 @@ public class MainActivity extends AppCompatActivity {
                 view.invalidate();
                 // En gros invalidate il dis qu'il redraw() la prochaine fois qu'il est en idle... sauf que les commandes suivantes l'empeche de redraw avant que la view recoive un nouveau invalidate dans la fonction traiterMatch
 
-                System.out.println(selected.size());
                 if (selected.size() >= 3) {
-                    Thread thread=  new Thread(){
+                    Handler traiterHandler = new Handler();
+                    Runnable traiterRunnable = new Runnable(){
                         @Override
-                        public void run(){
-                            try {
-                                synchronized(this){
-                                    wait(1500);
-                                }
-                            }
-                            catch(InterruptedException ex){
-                            }
+                        public void run() {
+                            traiterMatch();
                         }
                     };
-                    thread.start();
-                    view.postInvalidate();
-                    thread.join();
-                    traiterMatch();//Doit-on enlever la précédente avant d'en mettre une nouvelle?
+                    traiterHandler.postDelayed(traiterRunnable,1000);
                 }
             }
         }
@@ -274,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
             add = true;
             scoreHandler.postDelayed(scoreRunnable, 0);
 
-            afficherDernierSet(a, b, c);
+            //afficherDernierSet(a, b, c);
 
             selected.removeAllElements();  // Au cas ou non vide
             if (nbCarte == 15) {
