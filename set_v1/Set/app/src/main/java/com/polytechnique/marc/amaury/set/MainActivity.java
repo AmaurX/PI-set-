@@ -306,6 +306,9 @@ public class MainActivity extends AppCompatActivity {
             card.isSelected(false);
             carte = (ImageView) findViewById(c);
             carte.invalidate();
+
+            add = false;
+            scoreHandler.postDelayed(scoreRunnable, 0);
             //Désincrémentation du compteur du joueur et dernier set attrapé
 
         }
