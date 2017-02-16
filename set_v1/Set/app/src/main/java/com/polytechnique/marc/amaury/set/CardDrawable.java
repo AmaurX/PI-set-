@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.ColorMatrix;
+import android.graphics.LightingColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -37,7 +38,7 @@ class CardDrawable extends Drawable {
      * Whether the card is selected, or in the middle of a transition
      * (valid or invalid).
      */
-    private boolean selected;
+    private boolean selected = false;
 
     /**
      * The paint used internally to draw all parts of the card. It may
@@ -90,6 +91,10 @@ class CardDrawable extends Drawable {
         selected = selection;
     }
 
+    public boolean getSelected() {
+        return selected;
+    }
+
     @Override
     public void draw(Canvas canvas) {
         if (card == 0)
@@ -104,7 +109,7 @@ class CardDrawable extends Drawable {
         paint.setStyle(Paint.Style.STROKE);
         canvas.drawRect(b, paint);
         if (selected) {
-            paint.setColorFilter(new ColorFilter());
+            paint.setColorFilter(new LightingColorFilter(0xffff0000,0xffff0000));  //Cela change couleur à la selection mais pas comme je veux ...
         }
 
         /* Pick a color. */

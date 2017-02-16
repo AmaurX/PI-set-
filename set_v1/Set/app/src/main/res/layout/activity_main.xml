@@ -1,164 +1,159 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TableLayout android:id="@+id/activity_main"
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal">
-    <TableRow
-        android:layout_weight="1"
-        >
+
+    <TableRow android:layout_weight="1">
+
         <ImageView
-            android:contentDescription="@null"
             android:id="@+id/image1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:onClick="selection"
-            />
+            android:contentDescription="@null"
+            android:onClick="selection" />
 
         <ImageView
-            android:contentDescription="@null"
             android:id="@+id/image2"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:onClick="selection"
-            />
-        <ImageView
             android:contentDescription="@null"
+            android:onClick="selection" />
+
+        <ImageView
             android:id="@+id/image3"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:onClick="selection"
-            />
+            android:contentDescription="@null"
+            android:onClick="selection" />
 
         <ImageView
-            android:contentDescription="@null"
             android:id="@+id/image4"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
-            />
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:onClick="selection" />
     </TableRow>
 
     <TableRow android:layout_weight="1">
 
         <ImageView
-            android:contentDescription="@null"
             android:id="@+id/image5"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
-            />
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:onClick="selection" />
 
         <ImageView
-            android:contentDescription="@null"
             android:id="@+id/image6"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
-            />
-        <ImageView
+            android:layout_weight="1"
             android:contentDescription="@null"
+            android:onClick="selection" />
+
+        <ImageView
             android:id="@+id/image7"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
-            />
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:onClick="selection" />
 
         <ImageView
-            android:contentDescription="@null"
             android:id="@+id/image8"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
-            />
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:onClick="selection" />
     </TableRow>
 
     <TableRow
-        android:layout_weight="1"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_weight="1">
+
         <ImageView
-            android:contentDescription="@null"
             android:id="@+id/image9"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
-            />
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:onClick="selection" />
 
         <ImageView
-            android:contentDescription="@null"
             android:id="@+id/image10"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
-            />
-        <ImageView
+            android:layout_weight="1"
             android:contentDescription="@null"
-            android:id="@+id/image11"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:onClick="selection"
-            />
+            android:onClick="selection" />
 
         <ImageView
-            android:contentDescription="@null"
-            android:id="@+id/image12"
-            android:layout_weight="1"
+            android:id="@+id/image11"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
-            />
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:onClick="selection" />
+
+        <ImageView
+            android:id="@+id/image12"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:onClick="selection" />
 
     </TableRow>
 
-    <TableRow
-        android:layout_weight="1">
+    <TableRow android:layout_weight="1">
+
         <ImageView
-            android:contentDescription="@null"
             android:id="@+id/image13"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
-            />
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:onClick="selection" />
 
         <ImageView
-            android:contentDescription="@null"
             android:id="@+id/image14"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
-            />
-        <ImageView
+            android:layout_weight="1"
             android:contentDescription="@null"
-            android:id="@+id/image15"
-            android:layout_weight="1"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:onClick="selection"
-            />
+            android:onClick="selection" />
 
         <ImageView
-            android:contentDescription="@null"
-            android:id="@+id/image16"
-            android:layout_weight="1"
+            android:id="@+id/image15"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:onClick="selection"
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:onClick="selection" />
+
+        <TextView android:id="@+id/time"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:contentDescription="@string/time"
             />
+
+        <EditText
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:hint="@string/score" />
+
 
     </TableRow>
 

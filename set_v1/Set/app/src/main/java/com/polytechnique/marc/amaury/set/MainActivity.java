@@ -5,14 +5,18 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Handler;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TableLayout;
+import android.widget.TextView;
 
 import java.util.HashMap;
 import java.util.Random;
@@ -20,12 +24,32 @@ import java.util.Stack;
 
 public class MainActivity extends AppCompatActivity {
 
+    TextView timerTextView;
+    long startTime = 0;
+
+    //runs without a timer by reposting this handler at the end of the runnable
+    Handler timerHandler = new Handler();
+    Runnable timerRunnable = new Runnable() {
+
+        @Override
+        public void run() {
+            long millis = System.currentTimeMillis() - startTime;
+            int seconds = (int) (millis / 1000);
+            int minutes = seconds / 60;
+            seconds = seconds % 60;
+
+            timerTextView.setText(String.format("%d:%02d", minutes, seconds));
+
+            timerHandler.postDelayed(this, 500);
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        init();
 
+        init();
         testMatch();
 
     }
@@ -39,8 +63,10 @@ public class MainActivity extends AppCompatActivity {
     private Stack<Integer> selected = new Stack<Integer>();
 
 
-
     public void init() {
+        timerTextView = (TextView) findViewById(R.id.time);
+        startTime = System.currentTimeMillis();
+        timerHandler.postDelayed(timerRunnable, 0);
         tas.put(R.id.image1, 1);
         tas.put(R.id.image2, 2);
         tas.put(R.id.image3, 3);
@@ -57,8 +83,7 @@ public class MainActivity extends AppCompatActivity {
         tas.put(R.id.image14, 14);
         tas.put(R.id.image15, 15);
         for (Integer addresse : tas.keySet()) {
-            if (!(addresse.equals(R.id.image15) || addresse.equals(R.id.image14) || addresse.equals(R.id.image13)))
-            {
+            if (!(addresse.equals(R.id.image15) || addresse.equals(R.id.image14) || addresse.equals(R.id.image13))) {
                 addCard(addresse);
             }
         }
@@ -70,12 +95,12 @@ public class MainActivity extends AppCompatActivity {
         int k = 0;
         int numberOfTheCard = 0;
         while (flag) {
-            int a = (tirage.nextInt(3)+1);
-            int b = (tirage.nextInt(3)+1);
-            int c = (tirage.nextInt(3)+1);
-            int d = (tirage.nextInt(3)+1);
-            k = a + 4 * b + 16* c + 64* d ;
-            numberOfTheCard = (a -1) + 3 *(b-1) + 9 * (c-1) + 27 * (d-1);
+            int a = (tirage.nextInt(3) + 1);
+            int b = (tirage.nextInt(3) + 1);
+            int c = (tirage.nextInt(3) + 1);
+            int d = (tirage.nextInt(3) + 1);
+            k = a + 4 * b + 16 * c + 64 * d;
+            numberOfTheCard = (a - 1) + 3 * (b - 1) + 9 * (c - 1) + 27 * (d - 1);
             flag = deck[numberOfTheCard];
         }
         deck[numberOfTheCard] = true;
@@ -116,11 +141,22 @@ public class MainActivity extends AppCompatActivity {
 
     public void selection(View view) {
         int id = view.getId();
-
-        selected.push(id);
-        //mettre un travail sur CardDrawable avec changement méthode isSelected, puis on dit que Imageview est invalidate et donc changement
-        if (selected.size() >= 3) {
-            traiterMatch();        //Doit-on enlever la précédente avant d'en mettre une nouvelle?
+        ImageView carte = (ImageView) view;
+        CardDrawable card = (CardDrawable) carte.getDrawable();
+        if (card.getSelected()) {                        //Si déjà sélectionné on enlève la sélection
+            //selected.remove(id);                       //Je pense que la double sélection ne fonctionne pas, donc on va faire rien quand carte sélectionné
+            //card.isSelected(false);                //Ne fonctionne pas ...
+            /*clearCarte(id);                        //Ne fonctionne pas non plus ...
+            ImageView carte1 = (ImageView) findViewById(id);
+            carte1.setImageDrawable(new CardDrawable(table[tas.get(id)]));*/
+            return;
+        } else {
+            selected.push(id);
+            card.isSelected(true);
+            carte.invalidate();
+            if (selected.size() >= 3) {
+                traiterMatch();        //Doit-on enlever la précédente avant d'en mettre une nouvelle?
+            }
         }
     }
 
