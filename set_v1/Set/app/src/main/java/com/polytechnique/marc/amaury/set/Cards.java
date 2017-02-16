@@ -20,17 +20,18 @@ class Cards {
     /**
      * Encodes the specified individual characteristics into an
      * integer.
-     * @param number the number characteristic
-     * @param color the color characteristic
+     *
+     * @param number  the number characteristic
+     * @param color   the color characteristic
      * @param filling the filling characteristic
-     * @param shape the shape characteristic
+     * @param shape   the shape characteristic
      * @returns the encoded card
      */
     static int valueOf(int number, int color, int filling, int shape) {
         if (number <= 0 || number > 3 ||
-            color <= 0 || color > 3 ||
-            filling <= 0 || filling > 3 ||
-            shape <= 0 || shape > 3) {
+                color <= 0 || color > 3 ||
+                filling <= 0 || filling > 3 ||
+                shape <= 0 || shape > 3) {
             throw new IllegalArgumentException("Characteristics out of range.");
         }
         return number | (color << 2) | (filling << 4) | (shape << 6);
@@ -70,12 +71,14 @@ class Cards {
 
     /**
      * Checks whether the given cards make a set.
+     *
      * @param a an integer-encoded card to test
      * @param b an integer-encoded card to test
      * @param c an integer-encoded card to test
      * @returns whether we have a set
      */
     static boolean isSet(int a, int b, int c) {
+        if (a == -1 || b == -1 || c == -1) return false;
         for (int i = 0; i < 4; ++i) {
             if (((a & 0x3) + (b & 0x3) + (c & 0x3)) % 3 != 0) {
                 return false;

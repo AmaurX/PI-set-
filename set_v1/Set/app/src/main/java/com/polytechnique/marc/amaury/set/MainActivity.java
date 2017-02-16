@@ -32,8 +32,6 @@ public class MainActivity extends AppCompatActivity {
     ImageView set3;
 
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,10 +45,15 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean[] deck = new boolean[81];
     private int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
+    //si la carte vaux -1 elle n'existe pas, cf modification de isSet
     private HashMap<Integer, Integer> tas = new HashMap<Integer, Integer>();    //lie l'adresse au numéro de la carte (1 a 15)
     private int nbCarte = 12;
-    private HashMap<Integer,CardDrawable> carteSurTable = new HashMap<Integer, CardDrawable>();
+    private HashMap<Integer, CardDrawable> carteSurTable = new HashMap<Integer, CardDrawable>();
     private Stack<Integer> selected = new Stack<Integer>();
+
+    Integer trou1;
+    Integer trou2;
+    Integer trou3;
 
     TextView timerTextView;
     TextView scoreTextView;
@@ -122,15 +125,15 @@ public class MainActivity extends AppCompatActivity {
 
     public void init() {
         set1 = (ImageView) findViewById(R.id.set1);
-        numeroCarteSet=1;
-        setHandler.postDelayed(setRunnable,0);
+        numeroCarteSet = 1;
+        setHandler.postDelayed(setRunnable, 0);
         set2 = (ImageView) findViewById(R.id.set2);
-        numeroCarteSet=2;
-        setHandler.postDelayed(setRunnable,0);
+        numeroCarteSet = 2;
+        setHandler.postDelayed(setRunnable, 0);
         set3 = (ImageView) findViewById(R.id.set3);
-        numeroCarteSet=3;
-        setHandler.postDelayed(setRunnable,0);
-        numeroCarteSet=0;
+        numeroCarteSet = 3;
+        setHandler.postDelayed(setRunnable, 0);
+        numeroCarteSet = 0;
         timerTextView = (TextView) findViewById(R.id.time);
         startTime = System.currentTimeMillis();
         timerHandler.postDelayed(timerRunnable, 0);
@@ -154,6 +157,9 @@ public class MainActivity extends AppCompatActivity {
         tas.put(R.id.image13, 13);
         tas.put(R.id.image14, 14);
         tas.put(R.id.image15, 15);
+        trou1 = R.id.image13;
+        trou2 = R.id.image14;
+        trou3 = R.id.image15;
         for (Integer addresse : tas.keySet()) {
             if (!(addresse.equals(R.id.image15) || addresse.equals(R.id.image14) || addresse.equals(R.id.image13))) {
                 addCard(addresse);
@@ -183,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
         CardDrawable nouvelleCard = new CardDrawable(k, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
         nouvelleCard.customDraw();
         button.setImageDrawable(nouvelleCard);
-        carteSurTable.put(addresse,nouvelleCard);
+        carteSurTable.put(addresse, nouvelleCard);
         button.invalidate();                     //Etape pour réinitialiser une ImageView
     }
 
@@ -202,9 +208,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void testMatch() {
         if (!isThereMatch()) {
-            addCard(R.id.image15);
-            addCard(R.id.image14);
-            addCard(R.id.image13);
+            add3Cartes();
             nbCarte = 15;
         }
     }
@@ -224,7 +228,6 @@ public class MainActivity extends AppCompatActivity {
                 selected.remove(new Integer(id));
                 card.isSelected(false);
                 view.invalidate();
-
                 return;
             } else {
                 selected.push(id);
@@ -235,15 +238,14 @@ public class MainActivity extends AppCompatActivity {
 
                 System.out.println(selected.size());
                 if (selected.size() >= 3) {
-                    Thread thread=  new Thread(){
+                    Thread thread = new Thread() {
                         @Override
-                        public void run(){
+                        public void run() {
                             try {
-                                synchronized(this){
+                                synchronized (this) {
                                     wait(1500);
                                 }
-                            }
-                            catch(InterruptedException ex){
+                            } catch (InterruptedException ex) {
                             }
                         }
                     };
@@ -253,14 +255,15 @@ public class MainActivity extends AppCompatActivity {
                     traiterMatch();//Doit-on enlever la précédente avant d'en mettre une nouvelle?
                 }
             }
-        }
-        finally{
+        } finally {
             return;
         }
     }
 
     public void clearCarte(int addresse) {                                 //Opérationnelle
         ImageView carte1 = (ImageView) findViewById(addresse);
+        table[tas.get(addresse)] = -1;           //carte n'existe plus
+        carteSurTable.put(addresse,null);
         carte1.setImageDrawable(null);
         carte1.invalidate();
     }
@@ -269,6 +272,7 @@ public class MainActivity extends AppCompatActivity {
         Integer a = selected.pop();
         Integer b = selected.pop();
         Integer c = selected.pop();
+
         if (Cards.isSet(table[tas.get(a)], table[tas.get(b)], table[tas.get(c)])) {
 
 
@@ -276,18 +280,23 @@ public class MainActivity extends AppCompatActivity {
             add = true;
             scoreHandler.postDelayed(scoreRunnable, 0);
 
-            afficherDernierSet(a, b, b);
+            afficherDernierSet(a, b, c);
 
             selected.removeAllElements();  // Au cas ou non vide
             if (nbCarte == 15) {
                 clearCarte(a);
                 clearCarte(b);
                 clearCarte(c);
+                trou1 = a;
+                trou2 = b;
+                trou3 = c;
                 nbCarte = 12;
+                testMatch();
             } else {
                 addCard(a);
                 addCard(b);
                 addCard(c);
+                testMatch();
             }
 
         } else {
@@ -316,18 +325,24 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public void add3Cartes() {
+        addCard(trou1);
+        addCard(trou2);
+        addCard(trou3);
+    }
+
     //Non opérationnel
     public void afficherDernierSet(Integer a, Integer b, Integer c) {
         addresse = a;
-        numeroCarteSet=1;
+        numeroCarteSet = 1;
         setHandler.postDelayed(setRunnable, 0);
         addresse = b;
-        numeroCarteSet=2;
+        numeroCarteSet = 2;
         setHandler.postDelayed(setRunnable, 0);
         addresse = c;
-        numeroCarteSet=3;
+        numeroCarteSet = 3;
         setHandler.postDelayed(setRunnable, 0);
-        numeroCarteSet=0;
+        numeroCarteSet = 0;
 
     }
 }
