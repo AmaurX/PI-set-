@@ -260,7 +260,7 @@ public class MainActivity extends AppCompatActivity {
         Integer a = selected.pop();
         Integer b = selected.pop();
         Integer c = selected.pop();
-        if (Cards.isSet(table[tas.get(a)], table[tas.get(b)], table[tas.get(c)])) {
+        if (Cards.isSet(table[tas.get(a)-1], table[tas.get(b)-1], table[tas.get(c)-1])) {
 
 
             //Incrémentation du compteur du joueur et dernier set attrapé
