@@ -177,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
             flag = deck[numberOfTheCard];
         }
         deck[numberOfTheCard] = true;
-        table[tas.get(addresse)] = k;
+        table[tas.get(addresse) -1] = k;
         ImageView button = (ImageView) findViewById(addresse);
 
         CardDrawable nouvelleCard = new CardDrawable(k, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
@@ -202,6 +202,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void testMatch() {
         if (!isThereMatch()) {
+            System.out.println("Coucou");
             addCard(R.id.image15);
             addCard(R.id.image14);
             addCard(R.id.image13);
@@ -217,9 +218,7 @@ public class MainActivity extends AppCompatActivity {
         //ImageView carte = (ImageView) view;
         try {
             CardDrawable card = carteSurTable.get(id);
-            System.out.println("LA card est en mode " + card.getSelected());
             if (card.getSelected()) {
-                System.out.println("je suis dans le if");
                 //Si déjà sélectionné on enlève la sélection
                 selected.remove(new Integer(id));
                 card.isSelected(false);
@@ -229,7 +228,6 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 selected.push(id);
                 card.isSelected(true);
-                //carte.invalidate();
                 view.invalidate();
                 // En gros invalidate il dis qu'il redraw() la prochaine fois qu'il est en idle... sauf que les commandes suivantes l'empeche de redraw avant que la view recoive un nouveau invalidate dans la fonction traiterMatch
 
@@ -276,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
             add = true;
             scoreHandler.postDelayed(scoreRunnable, 0);
 
-            afficherDernierSet(a, b, b);
+            afficherDernierSet(a, b, c);
 
             selected.removeAllElements();  // Au cas ou non vide
             if (nbCarte == 15) {
@@ -290,7 +288,8 @@ public class MainActivity extends AppCompatActivity {
                 addCard(c);
             }
 
-        } else {
+        }
+        else {
             selected.removeAllElements();
             CardDrawable card = carteSurTable.get(a);
             card.isSelected(false);
@@ -313,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
-
+        testMatch();
     }
 
     //Non opérationnel
