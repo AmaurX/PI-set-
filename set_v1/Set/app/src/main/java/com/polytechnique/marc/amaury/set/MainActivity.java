@@ -98,11 +98,11 @@ public class MainActivity extends AppCompatActivity {
     Runnable setRunnable = new Runnable() {
         @Override
         public void run() {
-            CardDrawable nouvelleCard = new CardDrawable(171);
-            //CardDrawable nouvelleCard = new CardDrawable(table[tas.get(addresse)]);
             Bitmap bit = Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888);
-            Canvas can = new Canvas(bit);
-            nouvelleCard.draw(can);
+            CardDrawable nouvelleCard = new CardDrawable(171, bit);
+            //CardDrawable nouvelleCard = new CardDrawable(table[tas.get(addresse)]);
+
+            nouvelleCard.customDraw();
             switch (numeroCarteSet) {
                 case 0:
                     break;
@@ -183,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
             flag = deck[numberOfTheCard];
         }
         deck[numberOfTheCard] = true;
-        table[tas.get(addresse)] = k;
+        table[tas.get(addresse) - 1] = k;
         ImageView button = (ImageView) findViewById(addresse);
 
         CardDrawable nouvelleCard = new CardDrawable(k, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
@@ -208,22 +208,27 @@ public class MainActivity extends AppCompatActivity {
 
     public void testMatch() {
         if (!isThereMatch()) {
+
             add3Cartes();
+
+            System.out.println("Coucou");
+            addCard(R.id.image15);
+            addCard(R.id.image14);
+            addCard(R.id.image13);
+
             nbCarte = 15;
         }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 
-    public void selection(View view) {
+    public void selection(final View view) {
         int id = view.getId();
         System.out.println(id);
         //ImageView carte = (ImageView) view;
         try {
             CardDrawable card = carteSurTable.get(id);
-            System.out.println("LA card est en mode " + card.getSelected());
             if (card.getSelected()) {
-                System.out.println("je suis dans le if");
                 //Si déjà sélectionné on enlève la sélection
                 selected.remove(new Integer(id));
                 card.isSelected(false);
@@ -232,12 +237,11 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 selected.push(id);
                 card.isSelected(true);
-                //carte.invalidate();
                 view.invalidate();
                 // En gros invalidate il dis qu'il redraw() la prochaine fois qu'il est en idle... sauf que les commandes suivantes l'empeche de redraw avant que la view recoive un nouveau invalidate dans la fonction traiterMatch
 
-                System.out.println(selected.size());
                 if (selected.size() >= 3) {
+
                     Thread thread = new Thread() {
                         @Override
                         public void run() {
@@ -247,12 +251,18 @@ public class MainActivity extends AppCompatActivity {
                                 }
                             } catch (InterruptedException ex) {
                             }
+
+                            Handler traiterHandler = new Handler();
+                            Runnable traiterRunnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    traiterMatch();
+
+                                }
+                            };
+                            traiterHandler.postDelayed(traiterRunnable, 1000);
                         }
                     };
-                    thread.start();
-                    view.postInvalidate();
-                    thread.join();
-                    traiterMatch();//Doit-on enlever la précédente avant d'en mettre une nouvelle?
                 }
             }
         } finally {
@@ -263,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
     public void clearCarte(int addresse) {                                 //Opérationnelle
         ImageView carte1 = (ImageView) findViewById(addresse);
         table[tas.get(addresse)] = -1;           //carte n'existe plus
-        carteSurTable.put(addresse,null);
+        carteSurTable.put(addresse, null);
         carte1.setImageDrawable(null);
         carte1.invalidate();
     }
@@ -273,56 +283,62 @@ public class MainActivity extends AppCompatActivity {
         Integer b = selected.pop();
         Integer c = selected.pop();
 
+
         if (Cards.isSet(table[tas.get(a)], table[tas.get(b)], table[tas.get(c)])) {
 
+            if (Cards.isSet(table[tas.get(a) - 1], table[tas.get(b) - 1], table[tas.get(c) - 1])) {
 
-            //Incrémentation du compteur du joueur et dernier set attrapé
-            add = true;
-            scoreHandler.postDelayed(scoreRunnable, 0);
 
-            afficherDernierSet(a, b, c);
+                //Incrémentation du compteur du joueur et dernier set attrapé
+                add = true;
+                scoreHandler.postDelayed(scoreRunnable, 0);
 
-            selected.removeAllElements();  // Au cas ou non vide
-            if (nbCarte == 15) {
-                clearCarte(a);
-                clearCarte(b);
-                clearCarte(c);
-                trou1 = a;
-                trou2 = b;
-                trou3 = c;
-                nbCarte = 12;
-                testMatch();
+
+                afficherDernierSet(a, b, c);
+
+                //afficherDernierSet(a, b, c);
+
+
+                selected.removeAllElements();  // Au cas ou non vide
+                if (nbCarte == 15) {
+                    clearCarte(a);
+                    clearCarte(b);
+                    clearCarte(c);
+                    trou1 = a;
+                    trou2 = b;
+                    trou3 = c;
+                    nbCarte = 12;
+                    testMatch();
+                } else {
+                    addCard(a);
+                    addCard(b);
+                    addCard(c);
+                    testMatch();
+                }
+
             } else {
-                addCard(a);
-                addCard(b);
-                addCard(c);
-                testMatch();
+                selected.removeAllElements();
+                CardDrawable card = carteSurTable.get(a);
+                card.isSelected(false);
+                ImageView carte = (ImageView) findViewById(a);
+                carte.invalidate();
+
+                card = carteSurTable.get(b);
+                card.isSelected(false);
+                carte = (ImageView) findViewById(b);
+                carte.invalidate();
+
+                card = carteSurTable.get(c);
+                card.isSelected(false);
+                carte = (ImageView) findViewById(c);
+                carte.invalidate();
+
+                add = false;
+                scoreHandler.postDelayed(scoreRunnable, 0);
+                //Désincrémentation du compteur du joueur et dernier set attrapé
             }
-
-        } else {
-            selected.removeAllElements();
-            CardDrawable card = carteSurTable.get(a);
-            card.isSelected(false);
-            ImageView carte = (ImageView) findViewById(a);
-            carte.invalidate();
-
-            card = carteSurTable.get(b);
-            card.isSelected(false);
-            carte = (ImageView) findViewById(b);
-            carte.invalidate();
-
-            card = carteSurTable.get(c);
-            card.isSelected(false);
-            carte = (ImageView) findViewById(c);
-            carte.invalidate();
-
-            add = false;
-            scoreHandler.postDelayed(scoreRunnable, 0);
-            //Désincrémentation du compteur du joueur et dernier set attrapé
-
+            testMatch();
         }
-
-
     }
 
     public void add3Cartes() {

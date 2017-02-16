@@ -129,15 +129,16 @@ class CardDrawable extends Drawable {
 
         if (selected) {
             paint.setColor(Color.RED);
+            paint.setStrokeWidth(12);
         }
         else{
             paint.setColor(Color.DKGRAY);
+            paint.setStrokeWidth(10);
         }
 
 
         paint.setAlpha(alpha);
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(10);
         canvas.drawRect(b, paint);
 
 
