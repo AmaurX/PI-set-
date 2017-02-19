@@ -261,7 +261,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void clearCarte(int addresse) {                                 //Opérationnelle
         ImageView carte1 = (ImageView) findViewById(addresse);
-        table[tas.get(addresse)] = -1;           //carte n'existe plus
+        table[tas.get(addresse)-1] = -1;           //carte n'existe plus
         carteSurTable.put(addresse, null);
         carte1.setImageDrawable(null);
         carte1.invalidate();
