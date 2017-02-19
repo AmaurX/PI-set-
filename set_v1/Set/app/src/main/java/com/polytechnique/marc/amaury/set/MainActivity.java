@@ -224,7 +224,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void selection(final View view) {
         int id = view.getId();
-        System.out.println(id);
         //ImageView carte = (ImageView) view;
         try {
             CardDrawable card = carteSurTable.get(id);
@@ -241,28 +240,18 @@ public class MainActivity extends AppCompatActivity {
                 // En gros invalidate il dis qu'il redraw() la prochaine fois qu'il est en idle... sauf que les commandes suivantes l'empeche de redraw avant que la view recoive un nouveau invalidate dans la fonction traiterMatch
 
                 if (selected.size() >= 3) {
-
-                    Thread thread = new Thread() {
-                        @Override
-                        public void run() {
-                            try {
-                                synchronized (this) {
-                                    wait(1500);
-                                }
-                            } catch (InterruptedException ex) {
-                            }
-
-                            Handler traiterHandler = new Handler();
-                            Runnable traiterRunnable = new Runnable() {
+                    Handler traiterHandler = new Handler();
+                    Runnable traiterRunnable = new Runnable() {
                                 @Override
                                 public void run() {
                                     traiterMatch();
 
+
                                 }
-                            };
-                            traiterHandler.postDelayed(traiterRunnable, 1000);
-                        }
                     };
+                    traiterHandler.postDelayed(traiterRunnable, 1000);
+
+
                 }
             }
         } finally {
@@ -284,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
         Integer c = selected.pop();
 
 
-        if (Cards.isSet(table[tas.get(a)], table[tas.get(b)], table[tas.get(c)])) {
+
 
             if (Cards.isSet(table[tas.get(a) - 1], table[tas.get(b) - 1], table[tas.get(c) - 1])) {
 
@@ -294,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
                 scoreHandler.postDelayed(scoreRunnable, 0);
 
 
-                afficherDernierSet(a, b, c);
+                //afficherDernierSet(a, b, c);
 
                 //afficherDernierSet(a, b, c);
 
@@ -332,13 +321,12 @@ public class MainActivity extends AppCompatActivity {
                 card.isSelected(false);
                 carte = (ImageView) findViewById(c);
                 carte.invalidate();
-
                 add = false;
                 scoreHandler.postDelayed(scoreRunnable, 0);
                 //Désincrémentation du compteur du joueur et dernier set attrapé
             }
             testMatch();
-        }
+
     }
 
     public void add3Cartes() {

@@ -38,7 +38,7 @@ class CardDrawable extends Drawable {
     /**
      * Basic spacing step between concentric shapes.
      */
-    private static final float CONCENTRIC_STEP = 15.0F;
+    private static final float CONCENTRIC_STEP = 19.0F;
 
     /**
      * The card to draw.
@@ -144,7 +144,7 @@ class CardDrawable extends Drawable {
 
 
 
-        paint.setStrokeWidth(3);
+        paint.setStrokeWidth(4);
         /* Pick a color. */
         switch (Cards.colorOf(card))
 
