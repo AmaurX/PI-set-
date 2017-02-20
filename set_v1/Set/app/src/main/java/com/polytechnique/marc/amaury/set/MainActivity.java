@@ -193,6 +193,22 @@ public class MainActivity extends AppCompatActivity {
         button.invalidate();                     //Etape pour réinitialiser une ImageView
     }
 
+    public int numeroDeCarteToK(int numeroDeCarte){
+        int a = numeroDeCarte % 3;
+        int b = (numeroDeCarte - a)/3 % 3;
+        int c = (numeroDeCarte - a - 3*b)/9 % 3;
+        int d = (numeroDeCarte - a - 3*b - 9*c)/27 %3;
+        return ((a+1) + 4*(b+1) + 16*(c+1)+ 64*(d+1));
+    }
+
+    public int kToNumeroDeCarte (int k){
+        int a = k % 4;
+        int b = (k - a)/4 % 4;
+        int c = (k - a - 4*b)/16 % 4;
+        int d = (k - a - 4*b - 16*c)/64 %4;
+        return ((a-1) + 3*(b-1) + 9*(c-1)+ 27*(d-1));
+    }
+
     public boolean isThereMatch() {
         for (int card1 : table) {
             for (int card2 : table) {
@@ -261,7 +277,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void clearCarte(int addresse) {                                 //Opérationnelle
         ImageView carte1 = (ImageView) findViewById(addresse);
-        table[tas.get(addresse)-1] = -1;           //carte n'existe plus
+        deck[kToNumeroDeCarte(table[tas.get(addresse)-1])]=false;
+        table[tas.get(addresse)-1] = -1;
         carteSurTable.put(addresse, null);
         carte1.setImageDrawable(null);
         carte1.invalidate();
