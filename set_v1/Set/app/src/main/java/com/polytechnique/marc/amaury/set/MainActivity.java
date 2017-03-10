@@ -24,19 +24,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Stack;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MainActivity extends AppCompatActivity {
 
     ImageView set1;
     ImageView set2;
     ImageView set3;
-
+    ReentrantLock lock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        lock = new ReentrantLock();
         init();
         testMatch();
 
@@ -239,39 +241,50 @@ public class MainActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 
     public void selection(final View view) {
-        int id = view.getId();
-        //ImageView carte = (ImageView) view;
-        try {
-            CardDrawable card = carteSurTable.get(id);
-            if (card.getSelected()) {
-                //Si déjà sélectionné on enlève la sélection
-                selected.remove(new Integer(id));
-                card.isSelected(false);
-                view.invalidate();
-                return;
-            } else {
-                selected.push(id);
-                card.isSelected(true);
-                view.invalidate();
-                // En gros invalidate il dis qu'il redraw() la prochaine fois qu'il est en idle... sauf que les commandes suivantes l'empeche de redraw avant que la view recoive un nouveau invalidate dans la fonction traiterMatch
+        lock.lock();
+        try{
+            int id = view.getId();
+            //ImageView carte = (ImageView) view;
+            try {
+                CardDrawable card = carteSurTable.get(id);
+                if (card.getSelected()) {
+                    //Si déjà sélectionné on enlève la sélection
+                    selected.remove(new Integer(id));
+                    card.isSelected(false);
+                    view.invalidate();
+                    return;
+                } else {
+                    selected.push(id);
+                    card.isSelected(true);
+                    view.invalidate();
+                    // En gros invalidate il dis qu'il redraw() la prochaine fois qu'il est en idle... sauf que les commandes suivantes l'empeche de redraw avant que la view recoive un nouveau invalidate dans la fonction traiterMatch
 
-                if (selected.size() >= 3) {
-                    Handler traiterHandler = new Handler();
-                    Runnable traiterRunnable = new Runnable() {
-                                @Override
-                                public void run() {
+                    if (selected.size() >= 3) {
+
+                        Handler traiterHandler = new Handler();
+                        Runnable traiterRunnable = new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
                                     traiterMatch();
-
-
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
                                 }
-                    };
-                    traiterHandler.postDelayed(traiterRunnable, 1000);
+                            }
+                        };
+                        traiterHandler.postDelayed(traiterRunnable, 1);
 
 
+                    }
                 }
             }
-        } finally {
-            return;
+            finally {
+                return;
+            }
+
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -284,7 +297,9 @@ public class MainActivity extends AppCompatActivity {
         carte1.invalidate();
     }
 
-    public void traiterMatch() {
+    public void traiterMatch() throws InterruptedException {
+        Thread.sleep(1000);
+
         Integer a = selected.pop();
         Integer b = selected.pop();
         Integer c = selected.pop();
