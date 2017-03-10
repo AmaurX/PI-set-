@@ -33,12 +33,12 @@ class CardDrawable extends Drawable {
      * shapes and borders; expressed as a fraction of the bounding
      * dimension (width or height).
      */
-    private static final float SHAPE_PADDING = 0.125F;
+    private static final float SHAPE_PADDING = 0.100F;
 
     /**
      * Basic spacing step between concentric shapes.
      */
-    private static final float CONCENTRIC_STEP = 19.0F;
+    private static final float CONCENTRIC_STEP = 20.0F;
 
     /**
      * The card to draw.
@@ -201,6 +201,7 @@ class CardDrawable extends Drawable {
     private void drawShapeWithFilling(Canvas canvas, int filling, int shape) {
         switch (filling) {
             case 1:
+                paint.setStrokeWidth(10);
                 paint.setStyle(Paint.Style.STROKE);
                 drawShape(canvas, shape);
                 break;
@@ -209,6 +210,7 @@ class CardDrawable extends Drawable {
              * For intermediate filling, we draw concentric copies of
              * the same shape.
              */
+                paint.setStrokeWidth(4);
                 paint.setStyle(Paint.Style.STROKE);
                 float w = r.width() / 2.0F;
                 float u = CONCENTRIC_STEP * (r.height() / r.width());
