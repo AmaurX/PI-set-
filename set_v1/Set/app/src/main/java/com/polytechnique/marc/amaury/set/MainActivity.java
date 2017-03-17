@@ -40,10 +40,10 @@ public class MainActivity extends AppCompatActivity {
     ImageView set2;
     ImageView set3;
     ReentrantLock lock;
-
+    String debug = "Hello";
     //Pour mettre en marche le multijoueur
 
-    static final Boolean multiJoueur = false;
+    static Boolean multiJoueur = false;
 
 
     @Override
@@ -67,47 +67,59 @@ public class MainActivity extends AppCompatActivity {
         debug = s;
         debugHandler.postDelayed(debugRunnable,0);
     }
-    final static String my_login = "Amaury";
+    final static String my_login = "Moi";
     static PrintWriter server_out = null;
     static PrintWriter telnet_out = null;
 
-
+    Handler connectionHandler = new Handler();
     Runnable connection = new Runnable() {
         @Override
         public void run() {
-            Socket s = Net.establishConnection("192.168.1.125", 1708);
-            PrintWriter s_out = Net.connectionOut(s);
-            final BufferedReader s_in = Net.connectionIn(s);
-            displayMessage("CONNECTED");
+                Socket s;
+                try{
+                    s = Net.establishConnection("192.168.1.125", 1708);
+                    displayMessage("CONNECTED");}
+                catch (RuntimeException e){
+                    displayMessage("Unconnected");
+                    return;
+                }
 
-            s_out.println("LOGIN " + my_login);
-            String line;
-            try
-            { line = s_in.readLine(); }
-            catch (IOException e)
-            { throw new RuntimeException("in readLine"); }
-            displayMessage(line);
-            Scanner sc = new Scanner(line);
-            sc.useDelimiter(" ");
-            if(sc.next().equals("Welcome")){
-                displayMessage("ACCEPTED");
-                server_out = s_out;
-            }
-            final Thread from_server = new Thread(){
-                public void run(){
-                    String line = null;
-                    while(true){
-                        try {
-                            line = s_in.readLine();
-                            displayMessage(line);
-                            if(telnet_out != null)
-                                telnet_out.println(line);
-                        } catch (IOException e){
-                            throw new RuntimeException("in readLine - 2");
+
+
+
+                PrintWriter s_out = Net.connectionOut(s);
+                final BufferedReader s_in = Net.connectionIn(s);
+                s_out.println("LOGIN " + my_login);
+                String line;
+                try {
+                    line = s_in.readLine();
+                } catch (IOException e) {
+                    throw new RuntimeException("in readLine");
+                }
+                displayMessage(line);
+                Scanner sc = new Scanner(line);
+                sc.useDelimiter(" ");
+                if (sc.next().equals("Welcome")) {
+                    displayMessage("ACCEPTED");
+                    multiJoueur = true;
+                    server_out = s_out;
+                }
+                final Thread from_server = new Thread() {
+                    public void run() {
+                        String line = null;
+                        while (true) {
+                            try {
+                                line = s_in.readLine();
+                                displayMessage(line);
+                                if (telnet_out != null)
+                                    telnet_out.println(line);
+                            } catch (IOException e) {
+                                throw new RuntimeException("in readLine - 2");
+                            }
                         }
                     }
-                }
-            };
+                };
+
             from_server.start();
 
             final Thread as_server = new Thread(){
@@ -131,21 +143,29 @@ public class MainActivity extends AppCompatActivity {
                 }
 
             };
-            as_server.start();
+            //as_server.start();
         }
     };
     @Override
     public void onStart() {
         super.onStart();
-        // TODO: code s'executant au debut de l'application
-        try {
-            new Thread(connection).start();
+        debugTextView = (TextView) findViewById(R.id.debug);
+        debug = "caca";
+        debugHandler.postDelayed(debugRunnable,0);
 
-        } catch (RuntimeException msg){
-            displayMessage("Error "+msg);
-        }
+        // TODO: code s'executant au debut de l'application
+
+        new Thread(connection).start();
+
+
     }
 
+    private void sendMessage(String message){
+        // TODO: code s'executant quand l'utilisateur clique le bouton Send
+        // pour envoyer un nouveau message
+        server_out.println("SEND "+message);
+//		displayMessage(message);
+    }
 
     private boolean[] deck = new boolean[81];
     private int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
@@ -167,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
 
     long score = -1;
     boolean add = true;
-    String debug = "Hello";
+
     Integer addresse;
     int numeroCarteSet = 0;
 
@@ -203,7 +223,7 @@ public class MainActivity extends AppCompatActivity {
     Runnable debugRunnable = new Runnable() {
         @Override
         public void run() {
-            debugTextView.setText(String.format("%s:%s", "Debug", debug));
+            debugTextView.setText(String.format("%s", debug));
         }
     };
 
@@ -255,8 +275,6 @@ public class MainActivity extends AppCompatActivity {
             timerTextView = (TextView) findViewById(R.id.time);
             startTime = System.currentTimeMillis();
             timerHandler.postDelayed(timerRunnable, 0);
-            debugTextView = (TextView) findViewById(R.id.debug);
-            debugHandler.postDelayed(debugRunnable,0);
             tas.put(R.id.image1, 1);
             tas.put(R.id.image2, 2);
             tas.put(R.id.image3, 3);
@@ -373,6 +391,13 @@ public class MainActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 
     public void selection(final View view) {
+
+
+      if(multiJoueur){
+          sendMessage("carte cliqué");
+      }
+
+
         lock.lock();
         try{
             int id = view.getId();
