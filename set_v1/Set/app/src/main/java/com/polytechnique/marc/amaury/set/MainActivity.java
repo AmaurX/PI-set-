@@ -34,6 +34,11 @@ public class MainActivity extends AppCompatActivity {
     ImageView set3;
     ReentrantLock lock;
 
+    //Pour mettre en marche le multijoueur
+
+    static final Boolean multiJoueur = false;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean[] deck = new boolean[81];
     private int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
     //si la carte vaux -1 elle n'existe pas, cf modification de isSet
-    private HashMap<Integer, Integer> tas = new HashMap<Integer, Integer>();    //lie l'adresse au numéro de la carte (1 a 15)
+    private HashMap<Integer, Integer> tas = new HashMap<>();    //lie l'adresse au numéro de la carte (1 a 15)
     private int nbCarte = 12;
     private HashMap<Integer, CardDrawable> carteSurTable = new HashMap<Integer, CardDrawable>();
     private Stack<Integer> selected = new Stack<Integer>();
@@ -100,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
     Runnable setRunnable = new Runnable() {
         @Override
         public void run() {
-            Bitmap bit = Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888);
+            Bitmap bit = Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
             CardDrawable nouvelleCard = new CardDrawable(171, bit);
             //CardDrawable nouvelleCard = new CardDrawable(table[tas.get(addresse)]);
 
@@ -120,79 +125,92 @@ public class MainActivity extends AppCompatActivity {
                     set3.setImageDrawable(nouvelleCard);
                     set3.invalidate();
                     break;
+                default:
+                    break;
             }
         }
     };
 
 
     public void init() {
-        set1 = (ImageView) findViewById(R.id.set1);
-        numeroCarteSet = 1;
-        setHandler.postDelayed(setRunnable, 0);
-        set2 = (ImageView) findViewById(R.id.set2);
-        numeroCarteSet = 2;
-        setHandler.postDelayed(setRunnable, 0);
-        set3 = (ImageView) findViewById(R.id.set3);
-        numeroCarteSet = 3;
-        setHandler.postDelayed(setRunnable, 0);
-        numeroCarteSet = 0;
-        timerTextView = (TextView) findViewById(R.id.time);
-        startTime = System.currentTimeMillis();
-        timerHandler.postDelayed(timerRunnable, 0);
-        scoreTextView = (TextView) findViewById(R.id.score);
-        scoreHandler.postDelayed(scoreRunnable, 0);
-        timerTextView = (TextView) findViewById(R.id.time);
-        startTime = System.currentTimeMillis();
-        timerHandler.postDelayed(timerRunnable, 0);
-        tas.put(R.id.image1, 1);
-        tas.put(R.id.image2, 2);
-        tas.put(R.id.image3, 3);
-        tas.put(R.id.image4, 4);
-        tas.put(R.id.image5, 5);
-        tas.put(R.id.image6, 6);
-        tas.put(R.id.image7, 7);
-        tas.put(R.id.image8, 8);
-        tas.put(R.id.image9, 9);
-        tas.put(R.id.image10, 10);
-        tas.put(R.id.image11, 11);
-        tas.put(R.id.image12, 12);
-        tas.put(R.id.image13, 13);
-        tas.put(R.id.image14, 14);
-        tas.put(R.id.image15, 15);
-        trou1 = R.id.image13;
-        trou2 = R.id.image14;
-        trou3 = R.id.image15;
-        for (Integer addresse : tas.keySet()) {
-            if (!(addresse.equals(R.id.image15) || addresse.equals(R.id.image14) || addresse.equals(R.id.image13))) {
-                addCard(addresse);
-                System.out.println(addresse.doubleValue());
+        if(!multiJoueur) {
+            set1 = (ImageView) findViewById(R.id.set1);
+            numeroCarteSet = 1;
+            setHandler.postDelayed(setRunnable, 1);
+            set2 = (ImageView) findViewById(R.id.set2);
+            numeroCarteSet = 2;
+            setHandler.postDelayed(setRunnable, 1);
+            set3 = (ImageView) findViewById(R.id.set3);
+            numeroCarteSet = 3;
+            setHandler.postDelayed(setRunnable, 1);
+            numeroCarteSet = 0;
+            timerTextView = (TextView) findViewById(R.id.time);
+            startTime = System.currentTimeMillis();
+            timerHandler.postDelayed(timerRunnable, 0);
+            scoreTextView = (TextView) findViewById(R.id.score);
+            scoreHandler.postDelayed(scoreRunnable, 0);
+            timerTextView = (TextView) findViewById(R.id.time);
+            startTime = System.currentTimeMillis();
+            timerHandler.postDelayed(timerRunnable, 0);
+            tas.put(R.id.image1, 1);
+            tas.put(R.id.image2, 2);
+            tas.put(R.id.image3, 3);
+            tas.put(R.id.image4, 4);
+            tas.put(R.id.image5, 5);
+            tas.put(R.id.image6, 6);
+            tas.put(R.id.image7, 7);
+            tas.put(R.id.image8, 8);
+            tas.put(R.id.image9, 9);
+            tas.put(R.id.image10, 10);
+            tas.put(R.id.image11, 11);
+            tas.put(R.id.image12, 12);
+            tas.put(R.id.image13, 13);
+            tas.put(R.id.image14, 14);
+            tas.put(R.id.image15, 15);
+            trou1 = R.id.image13;
+            trou2 = R.id.image14;
+            trou3 = R.id.image15;
+            for (Integer addresse : tas.keySet()) {
+                if (!(addresse.equals(R.id.image15) || addresse.equals(R.id.image14) || addresse.equals(R.id.image13))) {
+                    addCard(addresse);
+                    System.out.println(addresse.doubleValue());
+                }
             }
+        }
+        else{
+            //mode en ligne a gerer.
+
         }
     }
 
     public void addCard(int addresse) {
-        Random tirage = new Random();
-        boolean flag = true;
-        int k = 0;
-        int numberOfTheCard = 0;
-        while (flag) {
-            int a = (tirage.nextInt(3) + 1);
-            int b = (tirage.nextInt(3) + 1);
-            int c = (tirage.nextInt(3) + 1);
-            int d = (tirage.nextInt(3) + 1);
-            k = a + 4 * b + 16 * c + 64 * d;
-            numberOfTheCard = (a - 1) + 3 * (b - 1) + 9 * (c - 1) + 27 * (d - 1);
-            flag = deck[numberOfTheCard];
-        }
-        deck[numberOfTheCard] = true;
-        table[tas.get(addresse) - 1] = k;
-        ImageView button = (ImageView) findViewById(addresse);
+        if(!multiJoueur) {
+            Random tirage = new Random();
+            boolean flag = true;
+            int k = 0;
+            int numberOfTheCard = 0;
+            while (flag) {
+                int a = (tirage.nextInt(3) + 1);
+                int b = (tirage.nextInt(3) + 1);
+                int c = (tirage.nextInt(3) + 1);
+                int d = (tirage.nextInt(3) + 1);
+                k = a + 4 * b + 16 * c + 64 * d;
+                numberOfTheCard = (a - 1) + 3 * (b - 1) + 9 * (c - 1) + 27 * (d - 1);
+                flag = deck[numberOfTheCard];
+            }
+            deck[numberOfTheCard] = true;
+            table[tas.get(addresse) - 1] = k;
+            ImageView button = (ImageView) findViewById(addresse);
 
-        CardDrawable nouvelleCard = new CardDrawable(k, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
-        nouvelleCard.customDraw();
-        button.setImageDrawable(nouvelleCard);
-        carteSurTable.put(addresse, nouvelleCard);
-        button.invalidate();                     //Etape pour réinitialiser une ImageView
+            CardDrawable nouvelleCard = new CardDrawable(k, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
+            nouvelleCard.customDraw();
+            button.setImageDrawable(nouvelleCard);
+            carteSurTable.put(addresse, nouvelleCard);
+            button.invalidate(); //Etape pour réinitialiser une ImageView
+        }
+        else{
+            //multijoueur a gerer.
+        }
     }
 
     public int numeroDeCarteToK(int numeroDeCarte){
@@ -212,29 +230,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public boolean isThereMatch() {
-        for (int card1 : table) {
-            for (int card2 : table) {
-                if (card1 == card2) continue;
-                for (int card3 : table) {
-                    if (card1 == card3 || card2 == card3) continue;
-                    if (Cards.isSet(card1, card2, card3)) return true;
+        if(!multiJoueur) {
+            for (int card1 : table) {
+                for (int card2 : table) {
+                    if (card1 == card2) continue;
+                    for (int card3 : table) {
+                        if (card1 == card3 || card2 == card3) continue;
+                        if (Cards.isSet(card1, card2, card3)) return true;
+                    }
                 }
             }
+            return false;
         }
-        return false;
+        else{
+            //multijoueur a gerer
+            return false;
+        }
     }
 
     public void testMatch() {
-        if (!isThereMatch()) {
+        if(!multiJoueur) {
+            if (!isThereMatch()) {
 
-            add3Cartes();
+                add3CartesSinglePlayer();
 
-            System.out.println("Coucou");
-            addCard(R.id.image15);
-            addCard(R.id.image14);
-            addCard(R.id.image13);
+                System.out.println("Coucou");
+                //addCard(R.id.image15);
+                //addCard(R.id.image14);
+                //addCard(R.id.image13);
 
-            nbCarte = 15;
+                nbCarte = 15;
+            }
+        }
+        else{
+            //multijoueur a gerer
         }
     }
 
@@ -260,25 +289,28 @@ public class MainActivity extends AppCompatActivity {
                     // En gros invalidate il dis qu'il redraw() la prochaine fois qu'il est en idle... sauf que les commandes suivantes l'empeche de redraw avant que la view recoive un nouveau invalidate dans la fonction traiterMatch
 
                     if (selected.size() >= 3) {
-
-                        Handler traiterHandler = new Handler();
-                        Runnable traiterRunnable = new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    traiterMatch();
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
+                        if(!multiJoueur) {
+                            Handler traiterHandler = new Handler();
+                            Runnable traiterRunnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        traiterMatchSinglePlayer();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
-                            }
-                        };
-                        traiterHandler.postDelayed(traiterRunnable, 1);
-
+                            };
+                            traiterHandler.postDelayed(traiterRunnable, 1);
+                        }
+                        else{
+                            //gerer multijoueur
+                        }
 
                     }
                 }
             }
-            finally {
+            finally{
                 return;
             }
 
@@ -297,7 +329,7 @@ public class MainActivity extends AppCompatActivity {
         carte1.invalidate();
     }
 
-    public void traiterMatch() throws InterruptedException {
+    public void traiterMatchSinglePlayer() throws InterruptedException {
         Thread.sleep(1000);
 
         Integer a = selected.pop();
@@ -361,7 +393,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void add3Cartes() {
+    public void add3CartesSinglePlayer() {
         addCard(trou1);
         addCard(trou2);
         addCard(trou3);
@@ -371,13 +403,13 @@ public class MainActivity extends AppCompatActivity {
     public void afficherDernierSet(Integer a, Integer b, Integer c) {
         addresse = a;
         numeroCarteSet = 1;
-        setHandler.postDelayed(setRunnable, 0);
+        setHandler.postDelayed(setRunnable, 1);
         addresse = b;
         numeroCarteSet = 2;
-        setHandler.postDelayed(setRunnable, 0);
+        setHandler.postDelayed(setRunnable, 1);
         addresse = c;
         numeroCarteSet = 3;
-        setHandler.postDelayed(setRunnable, 0);
+        setHandler.postDelayed(setRunnable, 1);
         numeroCarteSet = 0;
 
     }
