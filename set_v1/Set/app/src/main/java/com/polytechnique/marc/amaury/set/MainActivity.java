@@ -16,13 +16,20 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TextView;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.Stack;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -48,6 +55,96 @@ public class MainActivity extends AppCompatActivity {
         testMatch();
 
     }
+    final Handler Callback = new Handler();
+
+    // Variables stockant la valeur courante de l'etat memoire et cpu.
+
+    // Objet contenant le code a executer pour mettre a jour la boite
+    // de texte contenant la memoire disponible.
+
+
+    void displayMessage(String s){
+        debug = s;
+        debugHandler.postDelayed(debugRunnable,0);
+    }
+    final static String my_login = "Amaury";
+    static PrintWriter server_out = null;
+    static PrintWriter telnet_out = null;
+
+
+    Runnable connection = new Runnable() {
+        @Override
+        public void run() {
+            Socket s = Net.establishConnection("192.168.1.125", 1708);
+            PrintWriter s_out = Net.connectionOut(s);
+            final BufferedReader s_in = Net.connectionIn(s);
+            displayMessage("CONNECTED");
+
+            s_out.println("LOGIN " + my_login);
+            String line;
+            try
+            { line = s_in.readLine(); }
+            catch (IOException e)
+            { throw new RuntimeException("in readLine"); }
+            displayMessage(line);
+            Scanner sc = new Scanner(line);
+            sc.useDelimiter(" ");
+            if(sc.next().equals("Welcome")){
+                displayMessage("ACCEPTED");
+                server_out = s_out;
+            }
+            final Thread from_server = new Thread(){
+                public void run(){
+                    String line = null;
+                    while(true){
+                        try {
+                            line = s_in.readLine();
+                            displayMessage(line);
+                            if(telnet_out != null)
+                                telnet_out.println(line);
+                        } catch (IOException e){
+                            throw new RuntimeException("in readLine - 2");
+                        }
+                    }
+                }
+            };
+            from_server.start();
+
+            final Thread as_server = new Thread(){
+                public void run(){
+                    ServerSocket server_socket = Net.createServer(8888);
+                    while(true){
+                        Socket telnet_socket = Net.acceptConnection(server_socket);
+
+                        final PrintWriter s_out = Net.connectionOut(telnet_socket);
+                        final BufferedReader s_in = Net.connectionIn(telnet_socket);
+
+                        telnet_out = s_out;
+
+                        while(true){
+                            try {
+                                String line = s_in.readLine();
+                                server_out.println("SEND "+line);
+                            } catch(IOException e){}
+                        }
+                    }
+                }
+
+            };
+            as_server.start();
+        }
+    };
+    @Override
+    public void onStart() {
+        super.onStart();
+        // TODO: code s'executant au debut de l'application
+        try {
+            new Thread(connection).start();
+
+        } catch (RuntimeException msg){
+            displayMessage("Error "+msg);
+        }
+    }
 
 
     private boolean[] deck = new boolean[81];
@@ -64,12 +161,13 @@ public class MainActivity extends AppCompatActivity {
 
     TextView timerTextView;
     TextView scoreTextView;
+    TextView debugTextView;
 
     long startTime = 0;
 
     long score = -1;
     boolean add = true;
-
+    String debug = "Hello";
     Integer addresse;
     int numeroCarteSet = 0;
 
@@ -98,6 +196,14 @@ public class MainActivity extends AppCompatActivity {
             if (add) score += 1;
             else score -= 1;
             scoreTextView.setText(String.format("%s:%02d", "Score", score));
+        }
+    };
+
+    Handler debugHandler = new Handler();
+    Runnable debugRunnable = new Runnable() {
+        @Override
+        public void run() {
+            debugTextView.setText(String.format("%s:%s", "Debug", debug));
         }
     };
 
@@ -144,14 +250,13 @@ public class MainActivity extends AppCompatActivity {
             numeroCarteSet = 3;
             setHandler.postDelayed(setRunnable, 1);
             numeroCarteSet = 0;
-            timerTextView = (TextView) findViewById(R.id.time);
-            startTime = System.currentTimeMillis();
-            timerHandler.postDelayed(timerRunnable, 0);
             scoreTextView = (TextView) findViewById(R.id.score);
             scoreHandler.postDelayed(scoreRunnable, 0);
             timerTextView = (TextView) findViewById(R.id.time);
             startTime = System.currentTimeMillis();
             timerHandler.postDelayed(timerRunnable, 0);
+            debugTextView = (TextView) findViewById(R.id.debug);
+            debugHandler.postDelayed(debugRunnable,0);
             tas.put(R.id.image1, 1);
             tas.put(R.id.image2, 2);
             tas.put(R.id.image3, 3);
@@ -173,7 +278,6 @@ public class MainActivity extends AppCompatActivity {
             for (Integer addresse : tas.keySet()) {
                 if (!(addresse.equals(R.id.image15) || addresse.equals(R.id.image14) || addresse.equals(R.id.image13))) {
                     addCard(addresse);
-                    System.out.println(addresse.doubleValue());
                 }
             }
         }
@@ -254,7 +358,6 @@ public class MainActivity extends AppCompatActivity {
 
                 add3CartesSinglePlayer();
 
-                System.out.println("Coucou");
                 //addCard(R.id.image15);
                 //addCard(R.id.image14);
                 //addCard(R.id.image13);
