@@ -77,10 +77,10 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
                 Socket s;
                 try{
-                    s = Net.establishConnection("192.168.1.125", 1708);
+                    s = Net.establishConnection("192.168.1.15", 1708);
                     displayMessage("CONNECTED");}
                 catch (RuntimeException e){
-                    displayMessage("Unconnected");
+                    displayMessage("Unconnected: " +e.toString());
                     return;
                 }
 
@@ -150,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         debugTextView = (TextView) findViewById(R.id.debug);
-        debug = "caca";
+        debug = "on start";
         debugHandler.postDelayed(debugRunnable,0);
 
         // TODO: code s'executant au debut de l'application
@@ -305,34 +305,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void addCard(int addresse) {
-        if(!multiJoueur) {
-            Random tirage = new Random();
-            boolean flag = true;
-            int k = 0;
-            int numberOfTheCard = 0;
-            while (flag) {
-                int a = (tirage.nextInt(3) + 1);
-                int b = (tirage.nextInt(3) + 1);
-                int c = (tirage.nextInt(3) + 1);
-                int d = (tirage.nextInt(3) + 1);
-                k = a + 4 * b + 16 * c + 64 * d;
-                numberOfTheCard = (a - 1) + 3 * (b - 1) + 9 * (c - 1) + 27 * (d - 1);
-                flag = deck[numberOfTheCard];
-            }
-            deck[numberOfTheCard] = true;
-            table[tas.get(addresse) - 1] = k;
-            ImageView button = (ImageView) findViewById(addresse);
+    public void addCard(int adresse) {
+        Random tirage = new Random();
+        boolean flag = true;
+        int k = 0;
+        int numberOfTheCard = 0;
+        while (flag) {
+            int a = (tirage.nextInt(3) + 1);
+            int b = (tirage.nextInt(3) + 1);
+            int c = (tirage.nextInt(3) + 1);
+            int d = (tirage.nextInt(3) + 1);
+            k = a + 4 * b + 16 * c + 64 * d;
+            numberOfTheCard = (a - 1) + 3 * (b - 1) + 9 * (c - 1) + 27 * (d - 1);
+            flag = deck[numberOfTheCard];
+        }
+        deck[numberOfTheCard] = true;
+        table[tas.get(adresse) - 1] = k;
+        ImageView button = (ImageView) findViewById(adresse);
 
-            CardDrawable nouvelleCard = new CardDrawable(k, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
-            nouvelleCard.customDraw();
-            button.setImageDrawable(nouvelleCard);
-            carteSurTable.put(addresse, nouvelleCard);
-            button.invalidate(); //Etape pour réinitialiser une ImageView
+        CardDrawable nouvelleCard = new CardDrawable(k, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
+        nouvelleCard.customDraw();
+        button.setImageDrawable(nouvelleCard);
+        carteSurTable.put(adresse, nouvelleCard);
+        button.invalidate(); //Etape pour réinitialiser une ImageView
+
+        if(multiJoueur){
+            server_out.println("NEWCARD " + adresse + " " + numberOfTheCard);
         }
-        else{
-            //multijoueur a gerer.
-        }
+
     }
 
     public int numeroDeCarteToK(int numeroDeCarte){
@@ -352,51 +352,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public boolean isThereMatch() {
-        if(!multiJoueur) {
-            for (int card1 : table) {
-                for (int card2 : table) {
-                    if (card1 == card2) continue;
-                    for (int card3 : table) {
-                        if (card1 == card3 || card2 == card3) continue;
-                        if (Cards.isSet(card1, card2, card3)) return true;
-                    }
+
+        for (int card1 : table) {
+            for (int card2 : table) {
+                if (card1 == card2) continue;
+                for (int card3 : table) {
+                    if (card1 == card3 || card2 == card3) continue;
+                    if (Cards.isSet(card1, card2, card3)) return true;
                 }
             }
-            return false;
         }
-        else{
-            //multijoueur a gerer
-            return false;
-        }
+        return false;
+
     }
 
     public void testMatch() {
-        if(!multiJoueur) {
-            if (!isThereMatch()) {
+        if (!isThereMatch()) {
 
-                add3CartesSinglePlayer();
+            add3CartesSinglePlayer();
 
-                //addCard(R.id.image15);
-                //addCard(R.id.image14);
-                //addCard(R.id.image13);
+            //addCard(R.id.image15);
+            //addCard(R.id.image14);
+            //addCard(R.id.image13);
 
-                nbCarte = 15;
+            nbCarte = 15;
+            if(multiJoueur){
+                server_out.println("NUMBEROFCARDS " + 15);
             }
         }
-        else{
-            //multijoueur a gerer
-        }
+
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 
     public void selection(final View view) {
-
-
-      if(multiJoueur){
-          sendMessage("carte cliqué");
-      }
-
 
         lock.lock();
         try{
@@ -417,23 +406,20 @@ public class MainActivity extends AppCompatActivity {
                     // En gros invalidate il dis qu'il redraw() la prochaine fois qu'il est en idle... sauf que les commandes suivantes l'empeche de redraw avant que la view recoive un nouveau invalidate dans la fonction traiterMatch
 
                     if (selected.size() >= 3) {
-                        if(!multiJoueur) {
-                            Handler traiterHandler = new Handler();
-                            Runnable traiterRunnable = new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        traiterMatchSinglePlayer();
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
+
+                        Handler traiterHandler = new Handler();
+                        Runnable traiterRunnable = new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    traiterMatch();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
                                 }
-                            };
-                            traiterHandler.postDelayed(traiterRunnable, 1);
-                        }
-                        else{
-                            //gerer multijoueur
-                        }
+                            }
+                        };
+                        traiterHandler.postDelayed(traiterRunnable, 1);
+
 
                     }
                 }
@@ -457,7 +443,7 @@ public class MainActivity extends AppCompatActivity {
         carte1.invalidate();
     }
 
-    public void traiterMatchSinglePlayer() throws InterruptedException {
+    public void traiterMatch() throws InterruptedException {
         Thread.sleep(1000);
 
         Integer a = selected.pop();
@@ -474,6 +460,9 @@ public class MainActivity extends AppCompatActivity {
                 add = true;
                 scoreHandler.postDelayed(scoreRunnable, 0);
 
+                if(multiJoueur){
+                    server_out.println("POINT " + 1);
+                }
 
                 //afficherDernierSet(a, b, c);
 
@@ -482,6 +471,13 @@ public class MainActivity extends AppCompatActivity {
 
                 selected.removeAllElements();  // Au cas ou non vide
                 if (nbCarte == 15) {
+
+
+                    if(multiJoueur){
+                        server_out.println("NUMBEROFCARDS " + 12);
+                        server_out.println("WIN " + table[tas.get(a) - 1] + " " + table[tas.get(b) - 1] +" "+ table[tas.get(c) - 1]);
+                    }
+
                     clearCarte(a);
                     clearCarte(b);
                     clearCarte(c);
@@ -489,6 +485,8 @@ public class MainActivity extends AppCompatActivity {
                     trou2 = b;
                     trou3 = c;
                     nbCarte = 12;
+
+
                     testMatch();
                 } else {
                     addCard(a);
