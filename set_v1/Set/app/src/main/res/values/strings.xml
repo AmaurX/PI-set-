@@ -3,5 +3,6 @@
     <string name="score">Score</string>
     <string name="time">Temps passé</string>
     <string name="debug">debug</string>
+    <string name="button_send">Send</string>
 
 </resources>
