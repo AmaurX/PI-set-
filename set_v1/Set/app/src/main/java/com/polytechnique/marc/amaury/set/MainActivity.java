@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
     final Handler Callback = new Handler();
 
     // Variables stockant la valeur courante de l'etat memoire et cpu.
@@ -67,10 +68,11 @@ public class MainActivity extends AppCompatActivity {
     // de texte contenant la memoire disponible.
 
 
-    void displayMessage(String s){
+    void displayMessage(String s) {
         debug = s;
-        debugHandler.postDelayed(debugRunnable,0);
+        debugHandler.postDelayed(debugRunnable, 0);
     }
+
     final static String my_login = "Moi";
     static PrintWriter server_out = null;
     static PrintWriter telnet_out = null;
@@ -79,94 +81,93 @@ public class MainActivity extends AppCompatActivity {
     Runnable connection = new Runnable() {
         @Override
         public void run() {
-                Socket s;
-                try{
-                    s = Net.establishConnection("192.168.1.15", 1708);
-                    displayMessage("CONNECTED");}
-                catch (RuntimeException e){
-                    displayMessage("Unconnected: " +e.toString());
-                    return;
-                }
+            Socket s;
+            try {
+                s = Net.establishConnection("192.168.1.15", 1708);
+                displayMessage("CONNECTED");
+            } catch (RuntimeException e) {
+                displayMessage("Unconnected: " + e.toString());
+                return;
+            }
 
 
+            PrintWriter s_out = Net.connectionOut(s);
+            final BufferedReader s_in = Net.connectionIn(s);
+            s_out.println("LOGIN " + my_login);
+            String line;
+            try {
+                line = s_in.readLine();
+            } catch (IOException e) {
+                throw new RuntimeException("in readLine");
+            }
+            displayMessage(line);
+            Scanner sc = new Scanner(line);
+            sc.useDelimiter(" ");
+            if (sc.next().equals("Welcome")) {
+                displayMessage("ACCEPTED");
+                multiJoueur = true;
+                server_out = s_out;
+                s_out.println("NEWGAME");
+            }
+            final Thread from_server = new Thread() {
+                public PipedWriter pipeOut;
 
-
-                PrintWriter s_out = Net.connectionOut(s);
-                final BufferedReader s_in = Net.connectionIn(s);
-                s_out.println("LOGIN " + my_login);
-                String line;
-                try {
-                    line = s_in.readLine();
-                } catch (IOException e) {
-                    throw new RuntimeException("in readLine");
-                }
-                displayMessage(line);
-                Scanner sc = new Scanner(line);
-                sc.useDelimiter(" ");
-                if (sc.next().equals("Welcome")) {
-                    displayMessage("ACCEPTED");
-                    multiJoueur = true;
-                    server_out = s_out;
-                    s_out.println("NEWGAME");
-                }
-                final Thread from_server = new Thread() {
-                    public PipedWriter pipeOut;
-
-                    public void traiterMessageServeur(String line){
-                        if(line==null){return;}
-                        Scanner sc = new Scanner(line);
-                        sc.useDelimiter("/");
-                        if (sc.next().equals("theGame")) {
-                            System.out.println("On est dans theGame");
-                            int numDeLaCarte = 8;
-                            int i =0;
-                            while(sc.hasNext()){
-                                System.out.println("hello");
-                                numDeLaCarte = sc.nextInt();
-                                if(numDeLaCarte!=-1) {
-                                    table[i] = numeroDeCarteToK(numDeLaCarte);
-                                }
-                                else{
-                                    table[i]=-1;
-                                }
-                                i++;
-
-                            }
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    System.out.println("coucou");
-                                    mettreAJour();
-                                }
-                            });
-                        }
+                public void traiterMessageServeur(String line) {
+                    if (line == null) {
+                        return;
                     }
-
-                    public void run() {
-
-                        String line = null;
-                        while (true) {
-                            try {
-                                line = s_in.readLine();
-                                traiterMessageServeur(line);
-                                displayMessage(line);
-                                if (telnet_out != null)
-                                    telnet_out.println(line);
-                            } catch (IOException e) {
-                                //throw new RuntimeException("in readLine - 2");
-                                displayMessage("disconnection from serveur");
-                                multiJoueur = false;
+                    Scanner sc = new Scanner(line);
+                    sc.useDelimiter("/");
+                    if (sc.next().equals("theGame")) {
+                        System.out.println("On est dans theGame");
+                        int numDeLaCarte = 8;
+                        int i = 0;
+                        while (sc.hasNext()) {
+                            System.out.println("hello");
+                            numDeLaCarte = sc.nextInt();
+                            if (numDeLaCarte != -1) {
+                                table[i] = numeroDeCarteToK(numDeLaCarte);
+                            } else {
+                                table[i] = -1;
                             }
-                        }
-                    }
-                };
+                            i++;
 
+                        }
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                System.out.println("coucou");
+                                mettreAJour();
+                            }
+                        });
+                    }
+                }
+
+                public void run() {
+
+                    String line = null;
+                    while (true) {
+                        try {
+                            line = s_in.readLine();
+                            traiterMessageServeur(line);
+                            displayMessage(line);
+                            if (telnet_out != null)
+                                telnet_out.println(line);
+                        } catch (IOException e) {
+                            //throw new RuntimeException("in readLine - 2");
+                            displayMessage("disconnection from serveur");
+                            multiJoueur = false;
+                        }
+
+                    }
+                }
+            };
             from_server.start();
 
-            final Thread as_server = new Thread(){
-                public void run(){
+            final Thread as_server = new Thread() {
+                public void run() {
                     ServerSocket server_socket = Net.createServer(8888);
-                    while(true){
+                    while (true) {
                         Socket telnet_socket = Net.acceptConnection(server_socket);
 
                         final PrintWriter s_out = Net.connectionOut(telnet_socket);
@@ -174,11 +175,12 @@ public class MainActivity extends AppCompatActivity {
 
                         telnet_out = s_out;
 
-                        while(true){
+                        while (true) {
                             try {
                                 String line = s_in.readLine();
-                                server_out.println("SEND "+line);
-                            } catch(IOException e){}
+                                server_out.println("SEND " + line);
+                            } catch (IOException e) {
+                            }
                         }
                     }
                 }
@@ -187,12 +189,13 @@ public class MainActivity extends AppCompatActivity {
             //as_server.start();
         }
     };
+
     @Override
     public void onStart() {
         super.onStart();
         debugTextView = (TextView) findViewById(R.id.debug);
         debug = "on start";
-        debugHandler.postDelayed(debugRunnable,0);
+        debugHandler.postDelayed(debugRunnable, 0);
 
         // TODO: code s'executant au debut de l'application
 
@@ -218,12 +221,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void sendMessage(String message){
+    private void sendMessage(String message) {
         // TODO: code s'executant quand l'utilisateur clique le bouton Send
         // pour envoyer un nouveau message
-        server_out.println("SEND "+message);
+        server_out.println("SEND " + message);
 //		displayMessage(message);
     }
+
+
+
+    //les cartes sur table sont représentés par:   "numDeLaCarte valeurEnCard "
+    private StringBuffer carteSurTableEnstring(){
+        StringBuffer result=new StringBuffer();
+        for(int i=0;i<15;i++){
+            result.append(i+" "+table[i]+" ");
+        }
+        return result;
+    }
+
 
     private boolean[] deck = new boolean[81];
     public int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
@@ -323,7 +338,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void init() {
-        if(!multiJoueur) {
+        if (!multiJoueur) {
             set1 = (ImageView) findViewById(R.id.set1);
             numeroCarteSet = 1;
             setHandler.postDelayed(setRunnable, 1);
@@ -378,8 +393,7 @@ public class MainActivity extends AppCompatActivity {
                     addCard(addresse);
                 }
             }
-        }
-        else{
+        } else {
             //mode en ligne a gerer.
 
         }
@@ -409,26 +423,26 @@ public class MainActivity extends AppCompatActivity {
         carteSurTable.put(adresse, nouvelleCard);
         button.invalidate(); //Etape pour réinitialiser une ImageView
 
-        if(multiJoueur){
+        if (multiJoueur) {
             server_out.println("NEWCARD " + adresse + " " + numberOfTheCard);
         }
 
     }
 
-    public int numeroDeCarteToK(int numeroDeCarte){
+    public int numeroDeCarteToK(int numeroDeCarte) {
         int a = numeroDeCarte % 3;
-        int b = (numeroDeCarte - a)/3 % 3;
-        int c = (numeroDeCarte - a - 3*b)/9 % 3;
-        int d = (numeroDeCarte - a - 3*b - 9*c)/27 %3;
-        return ((a+1) + 4*(b+1) + 16*(c+1)+ 64*(d+1));
+        int b = (numeroDeCarte - a) / 3 % 3;
+        int c = (numeroDeCarte - a - 3 * b) / 9 % 3;
+        int d = (numeroDeCarte - a - 3 * b - 9 * c) / 27 % 3;
+        return ((a + 1) + 4 * (b + 1) + 16 * (c + 1) + 64 * (d + 1));
     }
 
-    public int kToNumeroDeCarte (int k){
+    public int kToNumeroDeCarte(int k) {
         int a = k % 4;
-        int b = (k - a)/4 % 4;
-        int c = (k - a - 4*b)/16 % 4;
-        int d = (k - a - 4*b - 16*c)/64 %4;
-        return ((a-1) + 3*(b-1) + 9*(c-1)+ 27*(d-1));
+        int b = (k - a) / 4 % 4;
+        int c = (k - a - 4 * b) / 16 % 4;
+        int d = (k - a - 4 * b - 16 * c) / 64 % 4;
+        return ((a - 1) + 3 * (b - 1) + 9 * (c - 1) + 27 * (d - 1));
     }
 
     public boolean isThereMatch() {
@@ -448,15 +462,9 @@ public class MainActivity extends AppCompatActivity {
 
     public void testMatch() {
         if (!isThereMatch()) {
-
             add3CartesSinglePlayer();
-
-            //addCard(R.id.image15);
-            //addCard(R.id.image14);
-            //addCard(R.id.image13);
-
             nbCarte = 15;
-            if(multiJoueur){
+            if (multiJoueur) {
                 server_out.println("NUMBEROFCARDS " + 15);
             }
         }
@@ -468,7 +476,7 @@ public class MainActivity extends AppCompatActivity {
     public void selection(final View view) {
         server_out.println("NEWGAME");
         lock.lock();
-        try{
+        try {
             int id = view.getId();
             //ImageView carte = (ImageView) view;
             try {
@@ -503,21 +511,20 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 }
-            }
-            finally{
+            } finally {
                 return;
             }
 
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
 
     public void clearCarte(int addresse) {                                 //Opérationnelle
         ImageView carte1 = (ImageView) findViewById(addresse);
-        deck[kToNumeroDeCarte(table[tas.get(addresse)-1])]=false;
-        table[tas.get(addresse)-1] = -1;
+        //C'est quoi cette ligne qui remet les cartes dans le tas: le jeu n'est pas censé s'arreter quand toute les cartes ont été tirés?
+        deck[kToNumeroDeCarte(table[tas.get(addresse) - 1])] = false;
+        table[tas.get(addresse) - 1] = -1;
         carteSurTable.put(addresse, null);
         carte1.setImageDrawable(null);
         carte1.invalidate();
@@ -531,71 +538,78 @@ public class MainActivity extends AppCompatActivity {
         Integer c = selected.pop();
 
 
+        if (Cards.isSet(table[tas.get(a) - 1], table[tas.get(b) - 1], table[tas.get(c) - 1])) {
+
+            /*if (!isServeur) {
+                StringBuffer message = new StringBuffer();
+                message.append(tas.get(a) - 1 + " " + table[tas.get(a) - 1] + " ");
+                message.append(tas.get(b) - 1 + " " + table[tas.get(b) - 1] + " ");
+                message.append(tas.get(c) - 1 + " " + table[tas.get(c) - 1] + " ");
+                server_out.println("SEND " + message);
+                //Comment on attend la réponse
+            }*/
 
 
-            if (Cards.isSet(table[tas.get(a) - 1], table[tas.get(b) - 1], table[tas.get(c) - 1])) {
+            //Incrémentation du compteur du joueur et dernier set attrapé
+            add = true;
+            scoreHandler.postDelayed(scoreRunnable, 0);
 
 
-                //Incrémentation du compteur du joueur et dernier set attrapé
-                add = true;
-                scoreHandler.postDelayed(scoreRunnable, 0);
-
-                if(multiJoueur){
-                    server_out.println("POINT " + 1);
-                }
-
-                afficherDernierSet(a, b, c);
-
-                //afficherDernierSet(a, b, c);
-
-
-                selected.removeAllElements();  // Au cas ou non vide
-                if (nbCarte == 15) {
-
-
-                    if(multiJoueur){
-                        server_out.println("NUMBEROFCARDS " + 12);
-                        server_out.println("WIN " + table[tas.get(a) - 1] + " " + table[tas.get(b) - 1] +" "+ table[tas.get(c) - 1]);
-                    }
-
-                    clearCarte(a);
-                    clearCarte(b);
-                    clearCarte(c);
-                    trou1 = a;
-                    trou2 = b;
-                    trou3 = c;
-                    nbCarte = 12;
-
-
-                    testMatch();
-                } else {
-                    addCard(a);
-                    addCard(b);
-                    addCard(c);
-                    testMatch();
-                }
-
-            } else {
-                selected.removeAllElements();
-                CardDrawable card = carteSurTable.get(a);
-                card.isSelected(false);
-                ImageView carte = (ImageView) findViewById(a);
-                carte.invalidate();
-
-                card = carteSurTable.get(b);
-                card.isSelected(false);
-                carte = (ImageView) findViewById(b);
-                carte.invalidate();
-
-                card = carteSurTable.get(c);
-                card.isSelected(false);
-                carte = (ImageView) findViewById(c);
-                carte.invalidate();
-                add = false;
-                scoreHandler.postDelayed(scoreRunnable, 0);
-                //Désincrémentation du compteur du joueur et dernier set attrapé
+            if (multiJoueur) {
+                server_out.println("POINT " + 1);
             }
-            testMatch();
+            setHandler.postDelayed(setRunnable,0);
+            //afficherDernierSet(a, b, c);
+
+
+
+            selected.removeAllElements();  // Au cas ou non vide
+            if (nbCarte == 15) {
+
+
+                if (multiJoueur) {
+                    server_out.println("NUMBEROFCARDS " + 12);
+                    server_out.println("WIN " + table[tas.get(a) - 1] + " " + table[tas.get(b) - 1] + " " + table[tas.get(c) - 1]);
+                }
+
+                clearCarte(a);
+                clearCarte(b);
+                clearCarte(c);
+                trou1 = a;
+                trou2 = b;
+                trou3 = c;
+                nbCarte = 12;
+
+
+                testMatch();
+            } else {
+                addCard(a);
+                addCard(b);
+                addCard(c);
+                testMatch();
+            }
+
+        } else {
+            selected.removeAllElements();
+            CardDrawable card = carteSurTable.get(a);
+            card.isSelected(false);
+            ImageView carte = (ImageView) findViewById(a);
+            carte.invalidate();
+
+            card = carteSurTable.get(b);
+            card.isSelected(false);
+            carte = (ImageView) findViewById(b);
+            carte.invalidate();
+
+            card = carteSurTable.get(c);
+            card.isSelected(false);
+            carte = (ImageView) findViewById(c);
+            carte.invalidate();
+            add = false;
+            scoreHandler.postDelayed(scoreRunnable, 0);
+            //Désincrémentation du compteur du joueur et dernier set attrapé
+        }
+        testMatch();
 
     }
 
@@ -607,16 +621,24 @@ public class MainActivity extends AppCompatActivity {
 
     //Non opérationnel
     public void afficherDernierSet(Integer a, Integer b, Integer c) {
-        addresse = a;
-        numeroCarteSet = 1;
-        new Thread(setRunnable).start();
-        addresse = b;
-        numeroCarteSet = 2;
-        new Thread(setRunnable).start();
-        addresse = c;
-        numeroCarteSet = 3;
-        new Thread(setRunnable).start();
-        numeroCarteSet = 0;
 
+        int val1 = table[tas.get(a) - 1];
+        int val2 = table[tas.get(b) - 1];
+        int val3 = table[tas.get(c) - 1];
+        clearCarte(R.id.set1);
+        clearCarte(R.id.set2);
+        clearCarte(R.id.set3);
+        addCard(R.id.set1, val1);
+        addCard(R.id.set2, val2);
+        addCard(R.id.set3, val3);
     }
+
+    public void addCard(int adresse, int val) {
+        ImageView button = (ImageView) findViewById(adresse);
+        CardDrawable nouvelleCard = new CardDrawable(val, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
+        nouvelleCard.customDraw();
+        button.setImageDrawable(nouvelleCard);
+        button.invalidate(); //Etape pour réinitialiser une ImageView
+    }
+
 }
