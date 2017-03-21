@@ -20,6 +20,7 @@ Protocole de communication tel que je le vois:
  Prefixe en CamelCase (pour faire la diff), puis N, et les séparateurs en / (sans espace)
  
  liste des messages:
-  - TheGame/15/63/24/ etc... avec -1 pour les trous, et le numéro de carte entre 0 et 80 inclu
-  - ThePoints/login1/point1/login2/point2 
+  - TheGame/N/15/63/24/ etc... avec -1 pour les trous, et le numéro de carte entre 0 et 80 inclu
+  - ThePoints/N/login1/point1/login2/point2
+  - Answer/N/loginasker/answer(true ou false)   --> pour faire l'affichage en rouge ou en vert de la combinaison demandée
   - Welcome LOGIN (reste de l'ancien protocole)
