@@ -23,6 +23,8 @@ import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.PipedReader;
+import java.io.PipedWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -44,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
     //Pour mettre en marche le multijoueur
 
     static Boolean multiJoueur = false;
-
+    PipedReader pipeIn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
         lock = new ReentrantLock();
         init();
         testMatch();
+        new Thread(connection).start();
+
 
     }
     final Handler Callback = new Handler();
@@ -103,18 +107,55 @@ public class MainActivity extends AppCompatActivity {
                     displayMessage("ACCEPTED");
                     multiJoueur = true;
                     server_out = s_out;
+                    s_out.println("NEWGAME");
                 }
                 final Thread from_server = new Thread() {
+                    public PipedWriter pipeOut;
+
+                    public void traiterMessageServeur(String line){
+                        if(line==null){return;}
+                        Scanner sc = new Scanner(line);
+                        sc.useDelimiter("/");
+                        if (sc.next().equals("theGame")) {
+                            System.out.println("On est dans theGame");
+                            int numDeLaCarte = 8;
+                            int i =0;
+                            while(sc.hasNext()){
+                                System.out.println("hello");
+                                numDeLaCarte = sc.nextInt();
+                                if(numDeLaCarte!=-1) {
+                                    table[i] = numeroDeCarteToK(numDeLaCarte);
+                                }
+                                else{
+                                    table[i]=-1;
+                                }
+                                i++;
+
+                            }
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    System.out.println("coucou");
+                                    mettreAJour();
+                                }
+                            });
+                        }
+                    }
+
                     public void run() {
+
                         String line = null;
                         while (true) {
                             try {
                                 line = s_in.readLine();
+                                traiterMessageServeur(line);
                                 displayMessage(line);
                                 if (telnet_out != null)
                                     telnet_out.println(line);
                             } catch (IOException e) {
-                                throw new RuntimeException("in readLine - 2");
+                                //throw new RuntimeException("in readLine - 2");
+                                displayMessage("disconnection from serveur");
+                                multiJoueur = false;
                             }
                         }
                     }
@@ -155,9 +196,26 @@ public class MainActivity extends AppCompatActivity {
 
         // TODO: code s'executant au debut de l'application
 
-        new Thread(connection).start();
 
+    }
 
+    public void mettreAJour(){
+        //mettre a jour carteSurTable, nbCartes, trou1 2 et 3, selected;
+        System.out.println(table[5]);
+        int count = 0;
+        for(int i = 0; i <15; i++){
+            if(table[i]!=-1){
+                count++;
+                int adresse = listeDesAdresses[i];
+                ImageView button = (ImageView) findViewById(adresse);
+                CardDrawable nouvelleCard = new CardDrawable(table[i], Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
+                nouvelleCard.customDraw();
+                button.setImageDrawable(nouvelleCard);
+                carteSurTable.put(adresse, nouvelleCard);
+                button.invalidate();
+            }
+
+        }
     }
 
     private void sendMessage(String message){
@@ -168,9 +226,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean[] deck = new boolean[81];
-    private int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
+    public int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
     //si la carte vaux -1 elle n'existe pas, cf modification de isSet
     private HashMap<Integer, Integer> tas = new HashMap<>();    //lie l'adresse au numéro de la carte (1 a 15)
+    private Integer[] listeDesAdresses = new Integer[15];
     private int nbCarte = 12;
     private HashMap<Integer, CardDrawable> carteSurTable = new HashMap<Integer, CardDrawable>();
     private Stack<Integer> selected = new Stack<Integer>();
@@ -208,6 +267,8 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+
+
     //Score opérationnel
     Handler scoreHandler = new Handler();
     Runnable scoreRunnable = new Runnable() {
@@ -235,20 +296,23 @@ public class MainActivity extends AppCompatActivity {
             CardDrawable nouvelleCard = new CardDrawable(171, bit);
             //CardDrawable nouvelleCard = new CardDrawable(table[tas.get(addresse)]);
 
-            nouvelleCard.customDraw();
+
             switch (numeroCarteSet) {
                 case 0:
                     break;
                 case 1:
                     set1.setImageDrawable(nouvelleCard);
+                    nouvelleCard.customDraw();
                     set1.invalidate();
                     break;
                 case 2:
                     set2.setImageDrawable(nouvelleCard);
+                    nouvelleCard.customDraw();
                     set2.invalidate();
                     break;
                 case 3:
                     set3.setImageDrawable(nouvelleCard);
+                    nouvelleCard.customDraw();
                     set3.invalidate();
                     break;
                 default:
@@ -275,6 +339,7 @@ public class MainActivity extends AppCompatActivity {
             timerTextView = (TextView) findViewById(R.id.time);
             startTime = System.currentTimeMillis();
             timerHandler.postDelayed(timerRunnable, 0);
+
             tas.put(R.id.image1, 1);
             tas.put(R.id.image2, 2);
             tas.put(R.id.image3, 3);
@@ -290,6 +355,21 @@ public class MainActivity extends AppCompatActivity {
             tas.put(R.id.image13, 13);
             tas.put(R.id.image14, 14);
             tas.put(R.id.image15, 15);
+            listeDesAdresses[0]=R.id.image1;
+            listeDesAdresses[1]=R.id.image2;
+            listeDesAdresses[2]=R.id.image3;
+            listeDesAdresses[3]=R.id.image4;
+            listeDesAdresses[4]=R.id.image5;
+            listeDesAdresses[5]=R.id.image6;
+            listeDesAdresses[6]=R.id.image7;
+            listeDesAdresses[7]=R.id.image8;
+            listeDesAdresses[8]=R.id.image9;
+            listeDesAdresses[9]=R.id.image10;
+            listeDesAdresses[10]=R.id.image11;
+            listeDesAdresses[11]=R.id.image12;
+            listeDesAdresses[12]=R.id.image13;
+            listeDesAdresses[13]=R.id.image14;
+            listeDesAdresses[14]=R.id.image15;
             trou1 = R.id.image13;
             trou2 = R.id.image14;
             trou3 = R.id.image15;
@@ -386,7 +466,7 @@ public class MainActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 
     public void selection(final View view) {
-
+        server_out.println("NEWGAME");
         lock.lock();
         try{
             int id = view.getId();
@@ -464,7 +544,7 @@ public class MainActivity extends AppCompatActivity {
                     server_out.println("POINT " + 1);
                 }
 
-                //afficherDernierSet(a, b, c);
+                afficherDernierSet(a, b, c);
 
                 //afficherDernierSet(a, b, c);
 
@@ -529,13 +609,13 @@ public class MainActivity extends AppCompatActivity {
     public void afficherDernierSet(Integer a, Integer b, Integer c) {
         addresse = a;
         numeroCarteSet = 1;
-        setHandler.postDelayed(setRunnable, 1);
+        new Thread(setRunnable).start();
         addresse = b;
         numeroCarteSet = 2;
-        setHandler.postDelayed(setRunnable, 1);
+        new Thread(setRunnable).start();
         addresse = c;
         numeroCarteSet = 3;
-        setHandler.postDelayed(setRunnable, 1);
+        new Thread(setRunnable).start();
         numeroCarteSet = 0;
 
     }
