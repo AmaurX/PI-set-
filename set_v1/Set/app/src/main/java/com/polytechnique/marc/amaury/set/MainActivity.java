@@ -28,6 +28,7 @@ import java.io.PipedWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -46,7 +47,6 @@ public class MainActivity extends AppCompatActivity {
     //Pour mettre en marche le multijoueur
 
     static Boolean multiJoueur = false;
-    PipedReader pipeIn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +55,20 @@ public class MainActivity extends AppCompatActivity {
         lock = new ReentrantLock();
         init();
         testMatch();
+        debugTextView = (TextView) findViewById(R.id.debug);
+        debug = "on create";
+        debugHandler.postDelayed(debugRunnable, 0);
         new Thread(connection).start();
+
+
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // TODO: code s'executant au debut de l'application
 
 
     }
@@ -70,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
 
     void displayMessage(String s) {
         debug = s;
-        debugHandler.postDelayed(debugRunnable, 0);
+        runOnUiThread(debugRunnable);
     }
 
     final static String my_login = "Moi";
@@ -83,23 +96,26 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             Socket s;
             try {
-                s = Net.establishConnection("192.168.1.15", 1708);
+                s = Net.establishConnection("192.168.1.125", 1708);
                 displayMessage("CONNECTED");
             } catch (RuntimeException e) {
                 displayMessage("Unconnected: " + e.toString());
                 return;
             }
-
+            System.out.println("débug : après la connection");
 
             PrintWriter s_out = Net.connectionOut(s);
             final BufferedReader s_in = Net.connectionIn(s);
-            s_out.println("LOGIN " + my_login);
+            s_out.println("LOGIN/" + my_login);
             String line;
+            System.out.println("débug : avant de lire une ligne");
             try {
                 line = s_in.readLine();
+                System.out.println("débug : j'ai lu une ligne");
             } catch (IOException e) {
                 throw new RuntimeException("in readLine");
             }
+
             displayMessage(line);
             Scanner sc = new Scanner(line);
             sc.useDelimiter(" ");
@@ -107,10 +123,9 @@ public class MainActivity extends AppCompatActivity {
                 displayMessage("ACCEPTED");
                 multiJoueur = true;
                 server_out = s_out;
-                s_out.println("NEWGAME");
+                s_out.println("NEWGAME/");
             }
             final Thread from_server = new Thread() {
-                public PipedWriter pipeOut;
 
                 public void traiterMessageServeur(String line) {
                     if (line == null) {
@@ -144,15 +159,18 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 public void run() {
-
+                    System.out.println("débug : dans le thread from server");
                     String line = null;
                     while (true) {
                         try {
                             line = s_in.readLine();
-                            traiterMessageServeur(line);
-                            displayMessage(line);
-                            if (telnet_out != null)
-                                telnet_out.println(line);
+                            if(line!=null) {
+                                System.out.println("débug : " + line);
+                                traiterMessageServeur(line);
+                                displayMessage(line);
+                                if (telnet_out != null)
+                                    telnet_out.println(line);
+                            }
                         } catch (IOException e) {
                             //throw new RuntimeException("in readLine - 2");
                             displayMessage("disconnection from serveur");
@@ -190,17 +208,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        debugTextView = (TextView) findViewById(R.id.debug);
-        debug = "on start";
-        debugHandler.postDelayed(debugRunnable, 0);
 
-        // TODO: code s'executant au debut de l'application
-
-
-    }
 
     public void mettreAJour(){
         //mettre a jour carteSurTable, nbCartes, trou1 2 et 3, selected;
@@ -341,13 +349,13 @@ public class MainActivity extends AppCompatActivity {
         if (!multiJoueur) {
             set1 = (ImageView) findViewById(R.id.set1);
             numeroCarteSet = 1;
-            setHandler.postDelayed(setRunnable, 1);
+            //setHandler.postDelayed(setRunnable, 1);
             set2 = (ImageView) findViewById(R.id.set2);
             numeroCarteSet = 2;
-            setHandler.postDelayed(setRunnable, 1);
+            //setHandler.postDelayed(setRunnable, 1);
             set3 = (ImageView) findViewById(R.id.set3);
             numeroCarteSet = 3;
-            setHandler.postDelayed(setRunnable, 1);
+            //setHandler.postDelayed(setRunnable, 1);
             numeroCarteSet = 0;
             scoreTextView = (TextView) findViewById(R.id.score);
             scoreHandler.postDelayed(scoreRunnable, 0);
@@ -474,7 +482,13 @@ public class MainActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 
     public void selection(final View view) {
-        server_out.println("NEWGAME");
+        if(multiJoueur) {
+            try {
+                server_out.println("NEWGAME");
+            } catch (IllegalStateException e) {
+                displayMessage("arg...");
+            }
+        }
         lock.lock();
         try {
             int id = view.getId();
@@ -494,20 +508,23 @@ public class MainActivity extends AppCompatActivity {
                     // En gros invalidate il dis qu'il redraw() la prochaine fois qu'il est en idle... sauf que les commandes suivantes l'empeche de redraw avant que la view recoive un nouveau invalidate dans la fonction traiterMatch
 
                     if (selected.size() >= 3) {
-
-                        Handler traiterHandler = new Handler();
-                        Runnable traiterRunnable = new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    traiterMatch();
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
+                        if(!multiJoueur) {
+                            Handler traiterHandler = new Handler();
+                            Runnable traiterRunnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        traiterMatch();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
-                            }
-                        };
-                        traiterHandler.postDelayed(traiterRunnable, 1);
-
+                            };
+                            traiterHandler.postDelayed(traiterRunnable, 1);
+                        }
+                        else{
+                            server_out.println("TRY");
+                        }
 
                     }
                 }
@@ -558,7 +575,7 @@ public class MainActivity extends AppCompatActivity {
             if (multiJoueur) {
                 server_out.println("POINT " + 1);
             }
-            setHandler.postDelayed(setRunnable,0);
+            //setHandler.postDelayed(setRunnable,0);
             //afficherDernierSet(a, b, c);
 
 
