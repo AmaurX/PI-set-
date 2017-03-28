@@ -7,7 +7,7 @@ Protocole de communication tel que je le vois:
  Prefixe en MAJUSCULE , puis N (le numéro du plateau présent chez le client, pour verification par le serveur) séparateur --> / (assez simle si on garde toujours un seul mot en préfixe) sans espace.
  
  liste des messages:
- - LOGIN/N/nomdelogin
+ - LOGIN/nomdelogin
  - NEWGAME/N                     --> demande un nouveau plateau
  - POINT/N                       --> demande les points (je sais pas si c'est utile)
  - TRY/N/carte1/carte2/carte3    --> propose un set sur le plateau N, je propose de mettre juste l'emplacement (de 0 à 14) des cartes, le serveur connait le plateau (considéré que si le serveur est encore a N)

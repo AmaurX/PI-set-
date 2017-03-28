@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -44,6 +45,9 @@ public class MainActivity extends AppCompatActivity {
     ImageView set3;
     ReentrantLock lock;
     String debug = "Hello";
+
+    public static AtomicInteger N =new AtomicInteger(0);
+
     //Pour mettre en marche le multijoueur
 
     static Boolean multiJoueur = false;
@@ -135,9 +139,14 @@ public class MainActivity extends AppCompatActivity {
                     sc.useDelimiter("/");
                     if (sc.next().equals("theGame")) {
                         System.out.println("On est dans theGame");
-                        int numDeLaCarte = 8;
+                        int numDeLaCarte;
                         int i = 0;
-                        while (sc.hasNext()) {
+                        if(sc.hasNext()){
+                            N.set(sc.nextInt());}
+                        else{
+                            displayMessage("Le game est incomplet");
+                        }
+                        while (sc.hasNext() && i<15) {
                             System.out.println("hello");
                             numDeLaCarte = sc.nextInt();
                             if (numDeLaCarte != -1) {
@@ -151,7 +160,6 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                System.out.println("coucou");
                                 mettreAJour();
                             }
                         });
@@ -212,11 +220,9 @@ public class MainActivity extends AppCompatActivity {
 
     public void mettreAJour(){
         //mettre a jour carteSurTable, nbCartes, trou1 2 et 3, selected;
-        System.out.println(table[5]);
         int count = 0;
         for(int i = 0; i <15; i++){
             if(table[i]!=-1){
-                count++;
                 int adresse = listeDesAdresses[i];
                 ImageView button = (ImageView) findViewById(adresse);
                 CardDrawable nouvelleCard = new CardDrawable(table[i], Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
@@ -224,6 +230,25 @@ public class MainActivity extends AppCompatActivity {
                 button.setImageDrawable(nouvelleCard);
                 carteSurTable.put(adresse, nouvelleCard);
                 button.invalidate();
+            }
+            else{
+                int adresse = listeDesAdresses[i];
+
+                carteSurTable.put(addresse, null);
+                ImageView carte1 = (ImageView) findViewById(adresse);
+                carte1.setImageDrawable(null);
+                carte1.invalidate();
+                if(count == 0){
+                    trou1 = adresse;
+                    count = 1;
+                }
+                else if(count == 1){
+                    trou2 = adresse;
+                    count = 2;
+                }
+                else{
+                    trou3 = adresse;
+                }
             }
 
         }
@@ -482,13 +507,14 @@ public class MainActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 
     public void selection(final View view) {
+        /* que pour faire des tests, n'a aucun sens sinon....
         if(multiJoueur) {
             try {
                 server_out.println("NEWGAME");
             } catch (IllegalStateException e) {
                 displayMessage("arg...");
             }
-        }
+        }*/
         lock.lock();
         try {
             int id = view.getId();
@@ -523,7 +549,19 @@ public class MainActivity extends AppCompatActivity {
                             traiterHandler.postDelayed(traiterRunnable, 1);
                         }
                         else{
-                            server_out.println("TRY");
+                            Handler traiterMultiHandler = new Handler();
+                            Runnable traiterMultiRunnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        traiterMatchMulti();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            };
+                            traiterMultiHandler.postDelayed(traiterMultiRunnable, 1);
+
                         }
 
                     }
@@ -545,6 +583,38 @@ public class MainActivity extends AppCompatActivity {
         carteSurTable.put(addresse, null);
         carte1.setImageDrawable(null);
         carte1.invalidate();
+    }
+
+    public void traiterMatchMulti () throws InterruptedException {
+        Thread.sleep(800);
+        String message = "TRY/" + N + "/";
+        int u = selected.pop();
+        int v = selected.pop();
+        int w = selected.pop();
+
+        int a = tas.get(u)-1;
+        int b = tas.get(v)-1;
+        int c = tas.get(w)-1;
+        message+=a+"/";
+        message+=b+"/";
+        message+=c+"/";
+        selected.empty();
+        server_out.println(message);
+
+        CardDrawable card = carteSurTable.get(u);
+        card.isSelected(false);
+        ImageView carte = (ImageView) findViewById(u);
+        carte.invalidate();
+
+        card = carteSurTable.get(v);
+        card.isSelected(false);
+        carte = (ImageView) findViewById(v);
+        carte.invalidate();
+
+        card = carteSurTable.get(w);
+        card.isSelected(false);
+        carte = (ImageView) findViewById(w);
+        carte.invalidate();
     }
 
     public void traiterMatch() throws InterruptedException {
