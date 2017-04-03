@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             Socket s;
             try {
-                s = Net.establishConnection("192.168.1.125", 1708);
+                s = Net.establishConnection("192.168.1.15", 1708);
                 displayMessage("CONNECTED");
             } catch (RuntimeException e) {
                 displayMessage("Unconnected: " + e.toString());
