@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static AtomicInteger N =new AtomicInteger(0);
 
+
     //Pour mettre en marche le multijoueur
 
     static Boolean multiJoueur = false;
@@ -100,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             Socket s;
             try {
-                s = Net.establishConnection("192.168.1.15", 1708);
+                s = Net.establishConnection("192.168.0.11", 1709);   //Marc: 192.168.0.11    Amaury: 192.168.1.15
                 displayMessage("CONNECTED");
             } catch (RuntimeException e) {
                 displayMessage("Unconnected: " + e.toString());
@@ -141,8 +142,8 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println("On est dans theGame");
                         int numDeLaCarte;
                         int i = 0;
-                        if(sc.hasNext()){
-                            N.set(sc.nextInt());}
+                        if(sc.hasNext()){   //Cette étape ne semble aps se faire correctement
+                            N.set(Integer.parseInt(sc.next()));}
                         else{
                             displayMessage("Le game est incomplet");
                         }
@@ -155,7 +156,6 @@ public class MainActivity extends AppCompatActivity {
                                 table[i] = -1;
                             }
                             i++;
-
                         }
                         runOnUiThread(new Runnable() {
                             @Override
@@ -163,7 +163,23 @@ public class MainActivity extends AppCompatActivity {
                                 mettreAJour();
                             }
                         });
+                    }else if(sc.next().equals("RESULT")){
+                        System.out.println("On change le score");
+                        String res="";
+                        if(sc.hasNext()){
+                            res =sc.next();}
+                        else{
+                            displayMessage("Le score est invalide");
+                        }
+                        if(res.equals("-")){
+                            add=false;
+                            scoreHandler.postDelayed(scoreRunnable, 0);
+                        }else if(res.equals("+")){
+                            add=true;
+                            scoreHandler.postDelayed(scoreRunnable, 0);
+                        }
                     }
+
                 }
 
                 public void run() {
@@ -587,6 +603,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void traiterMatchMulti () throws InterruptedException {
         Thread.sleep(800);
+
+
         String message = "TRY/" + N + "/";
         int u = selected.pop();
         int v = selected.pop();
