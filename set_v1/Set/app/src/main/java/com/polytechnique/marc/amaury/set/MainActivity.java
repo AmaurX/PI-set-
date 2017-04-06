@@ -1,5 +1,8 @@
 package com.polytechnique.marc.amaury.set;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -45,9 +48,10 @@ public class MainActivity extends AppCompatActivity {
     ImageView set3;
     ReentrantLock lock;
     String debug = "Hello";
-
+    String my_login = "default";
+    String ip_adresse = "default";
     public static AtomicInteger N =new AtomicInteger(0);
-
+    Thread connectionThread;
 
     //Pour mettre en marche le multijoueur
 
@@ -60,11 +64,17 @@ public class MainActivity extends AppCompatActivity {
         lock = new ReentrantLock();
         init();
         testMatch();
+
+        TextView parametre = (TextView)  findViewById(R.id.parametres);
+        parametre.setText("Paramètres");
         debugTextView = (TextView) findViewById(R.id.debug);
         debug = "on create";
         debugHandler.postDelayed(debugRunnable, 0);
-        new Thread(connection).start();
-
+        final SharedPreferences sharedPref = getActivity().getSharedPreferences(getString(R.string.preference_file_key),0);
+        my_login = sharedPref.getString(getString(R.string.pseudo),getResources().getString(R.string.pseudo));
+        ip_adresse = my_login = sharedPref.getString(getString(R.string.ip),getResources().getString(R.string.ip));
+        connectionThread = new Thread(connection);
+        connectionThread.start();
 
 
     }
@@ -72,9 +82,29 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
+        final SharedPreferences sharedPref = getActivity().getSharedPreferences(getString(R.string.preference_file_key),0);
+        String restart =  sharedPref.getString(getString(R.string.restart),getResources().getString(R.string.restart));
+        my_login = sharedPref.getString(getString(R.string.pseudo),getResources().getString(R.string.pseudo));
+        ip_adresse =  sharedPref.getString(getString(R.string.ip),getResources().getString(R.string.ip));
 
-        // TODO: code s'executant au debut de l'application
+        if(restart.equals("true")){
+            restartConnection();
+            sharedPref.edit().putString(getString(R.string.restart), "false").apply();
+        }
 
+
+    }
+
+    public void restartConnection(){
+        try{
+            connectionThread.interrupt();
+            connectionThread = null;
+            connectionThread = new Thread(connection);
+            connectionThread.start();
+        }
+        catch (RuntimeException e){
+            System.out.println(e.toString());
+        }
 
     }
 
@@ -91,7 +121,6 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(debugRunnable);
     }
 
-    final static String my_login = "Moi";
     static PrintWriter server_out = null;
     static PrintWriter telnet_out = null;
 
@@ -101,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             Socket s;
             try {
-                s = Net.establishConnection("192.168.0.11", 1709);   //Marc: 192.168.0.11    Amaury: 192.168.1.15
+                s = Net.establishConnection(ip_adresse, 1709);   //Marc: 192.168.0.11    Amaury: 192.168.1.15
                 displayMessage("CONNECTED");
             } catch (RuntimeException e) {
                 displayMessage("Unconnected: " + e.toString());
@@ -128,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
                 displayMessage("ACCEPTED");
                 multiJoueur = true;
                 server_out = s_out;
-                s_out.println("NEWGAME/");
+                s_out.println("GAMEPLEASE/");
             }
             final Thread from_server = new Thread() {
 
@@ -138,7 +167,10 @@ public class MainActivity extends AppCompatActivity {
                     }
                     Scanner sc = new Scanner(line);
                     sc.useDelimiter("/");
-                    if (sc.next().equals("theGame")) {
+
+                    String message = sc.next();
+
+                    if (message.equals("theGame")) {
                         System.out.println("On est dans theGame");
                         int numDeLaCarte;
                         int i = 0;
@@ -148,7 +180,6 @@ public class MainActivity extends AppCompatActivity {
                             displayMessage("Le game est incomplet");
                         }
                         while (sc.hasNext() && i<15) {
-                            System.out.println("hello");
                             numDeLaCarte = sc.nextInt();
                             if (numDeLaCarte != -1) {
                                 table[i] = numeroDeCarteToK(numDeLaCarte);
@@ -163,7 +194,8 @@ public class MainActivity extends AppCompatActivity {
                                 mettreAJour();
                             }
                         });
-                    }else if(sc.next().equals("RESULT")){
+                    }
+                    else if(message.equals("result")){
                         System.out.println("On change le score");
                         String res="";
                         if(sc.hasNext()){
@@ -179,6 +211,25 @@ public class MainActivity extends AppCompatActivity {
                             scoreHandler.postDelayed(scoreRunnable, 0);
                         }
                     }
+                    else if(message.equals("scores")){
+                        System.out.println("On récupère les scores");
+                        String res="";
+                        int count = 0;
+                        while(sc.hasNext()){
+                            res +=sc.next();
+                            if(count==0){
+                                res+= " : ";
+                                count = 1;
+                            }
+                            else{
+                                if(sc.hasNext()){
+                                    res += " - ";}
+                                count = 0;
+                            }
+                        }
+
+                        displayMessage(res);
+                    }
 
                 }
 
@@ -191,7 +242,6 @@ public class MainActivity extends AppCompatActivity {
                             if(line!=null) {
                                 System.out.println("débug : " + line);
                                 traiterMessageServeur(line);
-                                displayMessage(line);
                                 if (telnet_out != null)
                                     telnet_out.println(line);
                             }
@@ -204,6 +254,17 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             };
+
+            if(my_login.equals(getString(R.string.pseudo))) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Intent intent = new Intent(MainActivity.this, ParametreActivity.class);
+                        startActivity(intent);
+                        ;
+                    }
+                });
+            }
             from_server.start();
 
             final Thread as_server = new Thread() {
@@ -387,64 +448,60 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void init() {
-        if (!multiJoueur) {
-            set1 = (ImageView) findViewById(R.id.set1);
-            numeroCarteSet = 1;
-            //setHandler.postDelayed(setRunnable, 1);
-            set2 = (ImageView) findViewById(R.id.set2);
-            numeroCarteSet = 2;
-            //setHandler.postDelayed(setRunnable, 1);
-            set3 = (ImageView) findViewById(R.id.set3);
-            numeroCarteSet = 3;
-            //setHandler.postDelayed(setRunnable, 1);
-            numeroCarteSet = 0;
-            scoreTextView = (TextView) findViewById(R.id.score);
-            scoreHandler.postDelayed(scoreRunnable, 0);
-            timerTextView = (TextView) findViewById(R.id.time);
-            startTime = System.currentTimeMillis();
-            timerHandler.postDelayed(timerRunnable, 0);
 
-            tas.put(R.id.image1, 1);
-            tas.put(R.id.image2, 2);
-            tas.put(R.id.image3, 3);
-            tas.put(R.id.image4, 4);
-            tas.put(R.id.image5, 5);
-            tas.put(R.id.image6, 6);
-            tas.put(R.id.image7, 7);
-            tas.put(R.id.image8, 8);
-            tas.put(R.id.image9, 9);
-            tas.put(R.id.image10, 10);
-            tas.put(R.id.image11, 11);
-            tas.put(R.id.image12, 12);
-            tas.put(R.id.image13, 13);
-            tas.put(R.id.image14, 14);
-            tas.put(R.id.image15, 15);
-            listeDesAdresses[0]=R.id.image1;
-            listeDesAdresses[1]=R.id.image2;
-            listeDesAdresses[2]=R.id.image3;
-            listeDesAdresses[3]=R.id.image4;
-            listeDesAdresses[4]=R.id.image5;
-            listeDesAdresses[5]=R.id.image6;
-            listeDesAdresses[6]=R.id.image7;
-            listeDesAdresses[7]=R.id.image8;
-            listeDesAdresses[8]=R.id.image9;
-            listeDesAdresses[9]=R.id.image10;
-            listeDesAdresses[10]=R.id.image11;
-            listeDesAdresses[11]=R.id.image12;
-            listeDesAdresses[12]=R.id.image13;
-            listeDesAdresses[13]=R.id.image14;
-            listeDesAdresses[14]=R.id.image15;
-            trou1 = R.id.image13;
-            trou2 = R.id.image14;
-            trou3 = R.id.image15;
-            for (Integer addresse : tas.keySet()) {
-                if (!(addresse.equals(R.id.image15) || addresse.equals(R.id.image14) || addresse.equals(R.id.image13))) {
-                    addCard(addresse);
-                }
+        set1 = (ImageView) findViewById(R.id.set1);
+        numeroCarteSet = 1;
+        //setHandler.postDelayed(setRunnable, 1);
+        set2 = (ImageView) findViewById(R.id.set2);
+        numeroCarteSet = 2;
+        //setHandler.postDelayed(setRunnable, 1);
+        set3 = (ImageView) findViewById(R.id.set3);
+        numeroCarteSet = 3;
+        //setHandler.postDelayed(setRunnable, 1);
+        numeroCarteSet = 0;
+        scoreTextView = (TextView) findViewById(R.id.score);
+        scoreHandler.postDelayed(scoreRunnable, 0);
+        timerTextView = (TextView) findViewById(R.id.time);
+        startTime = System.currentTimeMillis();
+        timerHandler.postDelayed(timerRunnable, 0);
+
+        tas.put(R.id.image1, 1);
+        tas.put(R.id.image2, 2);
+        tas.put(R.id.image3, 3);
+        tas.put(R.id.image4, 4);
+        tas.put(R.id.image5, 5);
+        tas.put(R.id.image6, 6);
+        tas.put(R.id.image7, 7);
+        tas.put(R.id.image8, 8);
+        tas.put(R.id.image9, 9);
+        tas.put(R.id.image10, 10);
+        tas.put(R.id.image11, 11);
+        tas.put(R.id.image12, 12);
+        tas.put(R.id.image13, 13);
+        tas.put(R.id.image14, 14);
+        tas.put(R.id.image15, 15);
+        listeDesAdresses[0]=R.id.image1;
+        listeDesAdresses[1]=R.id.image2;
+        listeDesAdresses[2]=R.id.image3;
+        listeDesAdresses[3]=R.id.image4;
+        listeDesAdresses[4]=R.id.image5;
+        listeDesAdresses[5]=R.id.image6;
+        listeDesAdresses[6]=R.id.image7;
+        listeDesAdresses[7]=R.id.image8;
+        listeDesAdresses[8]=R.id.image9;
+        listeDesAdresses[9]=R.id.image10;
+        listeDesAdresses[10]=R.id.image11;
+        listeDesAdresses[11]=R.id.image12;
+        listeDesAdresses[12]=R.id.image13;
+        listeDesAdresses[13]=R.id.image14;
+        listeDesAdresses[14]=R.id.image15;
+        trou1 = R.id.image13;
+        trou2 = R.id.image14;
+        trou3 = R.id.image15;
+        for (Integer addresse : tas.keySet()) {
+            if (!(addresse.equals(R.id.image15) || addresse.equals(R.id.image14) || addresse.equals(R.id.image13))) {
+                addCard(addresse);
             }
-        } else {
-            //mode en ligne a gerer.
-
         }
     }
 
@@ -523,14 +580,7 @@ public class MainActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 
     public void selection(final View view) {
-        /* que pour faire des tests, n'a aucun sens sinon....
-        if(multiJoueur) {
-            try {
-                server_out.println("NEWGAME");
-            } catch (IllegalStateException e) {
-                displayMessage("arg...");
-            }
-        }*/
+
         lock.lock();
         try {
             int id = view.getId();
@@ -746,4 +796,13 @@ public class MainActivity extends AppCompatActivity {
         button.invalidate(); //Etape pour réinitialiser une ImageView
     }
 
+    public void pushParameters(final View v) {
+        Intent intent = new Intent(MainActivity.this, ParametreActivity.class);
+        startActivity(intent);
+    }
+
+    public Context getActivity() {
+        return this;
+    }
 }
+

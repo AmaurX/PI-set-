@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/parametres"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TableRow android:layout_weight="1"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/pseudoText"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:contentDescription="@string/pseudonyme"
+                tools:text="Pseudonyme:"
+                android:textAppearance="@style/TextAppearance.AppCompat.Button"
+                android:lineSpacingExtra="8sp"
+                android:textAlignment="center"
+                android:textColor="@android:color/black" />
+            <EditText
+                android:id="@+id/pseudo"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:contentDescription="@string/pseudo"
+                android:hint="@string/pseudo"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:layout_height="match_parent"
+                android:selectAllOnFocus="false" />
+        </TableRow>
+
+    <TableRow android:layout_weight="1"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/ipText"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:contentDescription="@string/adresseIp"
+                tools:text="adresse Ip du serveur:"
+                android:textAppearance="@style/TextAppearance.AppCompat.Button"
+                android:textAlignment="center"
+                android:textColor="@android:color/black" />
+
+            <EditText
+                android:id="@+id/adresseIp"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:contentDescription="@string/ip"
+                android:hint="@string/ip"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:selectAllOnFocus="false" />
+        </TableRow>
+
+    <TableRow android:layout_weight="1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:id="@+id/textView" />
+
+        <Button
+            android:text="Retour"
+            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:id="@+id/textView2"
+            android:layout_height="50dp"
+            style="@style/Widget.AppCompat.Button.Small"
+            android:elevation="14dp"
+            android:onClick="retour" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:id="@+id/textView3" />
+    </TableRow>
+
+    <TableRow android:layout_weight="8"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    </TableRow>
+
+    <TableRow android:layout_weight="1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+
+        <TextView
+            android:text="TextView"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:id="@+id/textView4" />
+
+        <Button
+            android:text="Relancer la connection"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:id="@+id/button"
+            android:elevation="14dp"
+            android:onClick="restartConnection" />
+
+        <TextView
+            android:text="TextView"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:id="@+id/textView6" />
+    </TableRow>
+</TableLayout>
+

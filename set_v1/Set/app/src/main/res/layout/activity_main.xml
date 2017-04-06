@@ -6,7 +6,10 @@
     android:layout_height="match_parent"
     android:orientation="horizontal">
 
-    <TableRow android:layout_weight="0.2">
+    <TableRow android:layout_weight="0.2"
+        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:orientation="horizontal">
         <TextView
             android:id="@+id/debug"
             android:layout_width="0dp"
@@ -14,6 +17,20 @@
             android:layout_weight="1"
             android:contentDescription="@string/debug"
             />
+
+        <TextView
+            android:id="@+id/parametres"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:contentDescription="@string/parametres"
+            android:onClick="pushParameters"
+            tools:text="Parametre"
+            android:textAppearance="@style/TextAppearance.AppCompat.Button"
+            android:textAlignment="viewEnd"
+            android:textSize="18sp"
+            android:lineSpacingExtra="10sp"
+            android:text="Paramètres"
+            android:layout_width="wrap_content" />
     </TableRow>
     <TableRow android:layout_weight="1">
 
