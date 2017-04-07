@@ -1,63 +1,75 @@
 package com.polytechnique.marc.amaury.set;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
-import android.os.SystemClock;
-import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TableLayout;
 import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.PipedReader;
-import java.io.PipedWriter;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MainActivity extends AppCompatActivity {
 
-    ImageView set1;
-    ImageView set2;
-    ImageView set3;
+    ImageView set;
+
     ReentrantLock lock;
     String debug = "Hello";
     String my_login = "default";
     String ip_adresse = "default";
     public static AtomicInteger N =new AtomicInteger(0);
     Thread connectionThread;
-
+    static PrintWriter server_out = null;
+    static PrintWriter telnet_out = null;
     //Pour mettre en marche le multijoueur
 
     static Boolean multiJoueur = false;
     Condition wait;
+
+    private boolean[] deck = new boolean[81];
+    public int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
+    //si la carte vaux -1 elle n'existe pas, cf modification de isSet
+    @SuppressLint("UseSparseArrays")
+    private HashMap<Integer, Integer> tas = new HashMap<>();    //lie l'adresse au numéro de la carte (1 a 15)
+    private Integer[] listeDesAdresses = new Integer[15];
+    private int nbCarte = 12;
+    @SuppressLint("UseSparseArrays")
+    private HashMap<Integer, CardDrawable> carteSurTable = new HashMap<>();
+    private volatile Stack<Integer> selected = new Stack<>();
+
+    Integer trou1;
+    Integer trou2;
+    Integer trou3;
+
+    TextView timerTextView;
+    TextView scoreTextView;
+    TextView debugTextView;
+
+    long startTime = 0;
+
+    long score = -1;
+    boolean add = true;
+
+    Integer addresse;
+    int numeroCarteSet = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
         testMatch();
 
         TextView parametre = (TextView)  findViewById(R.id.parametres);
-        parametre.setText("Paramètres");
+        parametre.setText(R.string.parametres);
         debugTextView = (TextView) findViewById(R.id.debug);
         debug = "on create";
         debugHandler.postDelayed(debugRunnable, 0);
@@ -100,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void restartConnection(){
         try{
+            sendMessage("LOGOUT");
             connectionThread.interrupt();
             connectionThread = null;
             connectionThread = new Thread(connection);
@@ -111,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    final Handler Callback = new Handler();
+
 
     // Variables stockant la valeur courante de l'etat memoire et cpu.
 
@@ -124,10 +137,8 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(debugRunnable);
     }
 
-    static PrintWriter server_out = null;
-    static PrintWriter telnet_out = null;
 
-    Handler connectionHandler = new Handler();
+
     Runnable connection = new Runnable() {
         @Override
         public void run() {
@@ -164,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
             }
             final Thread from_server = new Thread() {
 
-                public void traiterMessageServeur(String line) {
+                void traiterMessageServeur(String line) {
                     if (line == null) {
                         return;
                     }
@@ -173,79 +184,82 @@ public class MainActivity extends AppCompatActivity {
 
                     String message = sc.next();
 
-                    if (message.equals("theGame")) {
-                        System.out.println("On est dans theGame");
-                        int numDeLaCarte;
-                        int i = 0;
-                        if(sc.hasNext()){   //Cette étape ne semble aps se faire correctement
-                            N.set(Integer.parseInt(sc.next()));}
-                        else{
-                            displayMessage("Le game est incomplet");
-                        }
-                        while (sc.hasNext() && i<15) {
-                            numDeLaCarte = sc.nextInt();
-                            if (numDeLaCarte != -1) {
-                                table[i] = numeroDeCarteToK(numDeLaCarte);
+                    switch (message) {
+                        case "theGame":
+                            System.out.println("On est dans theGame");
+                            int numDeLaCarte;
+                            int i = 0;
+                            if (sc.hasNext()) {   //Cette étape ne semble aps se faire correctement
+                                N.set(Integer.parseInt(sc.next()));
                             } else {
-                                table[i] = -1;
+                                displayMessage("Le game est incomplet");
                             }
-                            i++;
-                        }
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mettreAJour();
+                            while (sc.hasNext() && i < 15) {
+                                numDeLaCarte = sc.nextInt();
+                                if (numDeLaCarte != -1) {
+                                    table[i] = numeroDeCarteToK(numDeLaCarte);
+                                } else {
+                                    table[i] = -1;
+                                }
+                                i++;
                             }
-                        });
-                        selected.empty();
-                        lock.lock();
-                        wait.signalAll();
-                        lock.unlock();
-
-                    }
-                    else if(message.equals("result")){
-                        System.out.println("On change le score");
-                        String res="";
-                        if(sc.hasNext()){
-                            res =sc.next();}
-                        else{
-                            displayMessage("Le score est invalide");
-                        }
-                        if(res.equals("-")){
-                            add=false;
-                            scoreHandler.postDelayed(scoreRunnable, 0);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mettreAJour();
+                                }
+                            });
                             selected.empty();
+                            lock.lock();
+                            wait.signalAll();
+                            lock.unlock();
 
-                        }else if(res.equals("+")){
-                            add=true;
-                            scoreHandler.postDelayed(scoreRunnable, 0);
-                        }
-                    }
-                    else if(message.equals("scores")){
-                        System.out.println("On récupère les scores");
-                        String res="";
-                        int count = 0;
-                        while(sc.hasNext()){
-                            res +=sc.next();
-                            if(count==0){
-                                res+= " : ";
-                                count = 1;
+                            break;
+                        case "result": {
+                            System.out.println("On change le score");
+                            Integer res = 0;
+                            if (sc.hasNext()) {
+                                res = sc.nextInt();
+                            } else {
+                                displayMessage("Le score est invalide");
                             }
-                            else{
-                                if(sc.hasNext()){
-                                    res += " - ";}
-                                count = 0;
-                            }
-                        }
+                            score = res;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    scoreTextView.setText(String.format("%s:%02d", "Score", score));
+                                }
+                            });
 
-                        displayMessage(res);
+                            break;
+                        }
+                        case "scores": {
+                            System.out.println("On récupère les scores");
+                            String res = "";
+                            int count = 0;
+                            while (sc.hasNext()) {
+                                res += sc.next();
+                                if (count == 0) {
+                                    res += " : ";
+                                    count = 1;
+                                } else {
+                                    if (sc.hasNext()) {
+                                        res += " - ";
+                                    }
+                                    count = 0;
+                                }
+                            }
+
+                            displayMessage(res);
+                            break;
+                        }
                     }
 
                 }
 
                 public void run() {
                     System.out.println("débug : dans le thread from server");
-                    String line = null;
+                    String line;
                     while (true) {
                         try {
                             line = s_in.readLine();
@@ -259,6 +273,7 @@ public class MainActivity extends AppCompatActivity {
                             //throw new RuntimeException("in readLine - 2");
                             displayMessage("disconnection from serveur");
                             multiJoueur = false;
+                            break;
                         }
 
                     }
@@ -271,35 +286,12 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         Intent intent = new Intent(MainActivity.this, ParametreActivity.class);
                         startActivity(intent);
-                        ;
+
                     }
                 });
             }
             from_server.start();
 
-            final Thread as_server = new Thread() {
-                public void run() {
-                    ServerSocket server_socket = Net.createServer(8888);
-                    while (true) {
-                        Socket telnet_socket = Net.acceptConnection(server_socket);
-
-                        final PrintWriter s_out = Net.connectionOut(telnet_socket);
-                        final BufferedReader s_in = Net.connectionIn(telnet_socket);
-
-                        telnet_out = s_out;
-
-                        while (true) {
-                            try {
-                                String line = s_in.readLine();
-                                server_out.println("SEND " + line);
-                            } catch (IOException e) {
-                            }
-                        }
-                    }
-                }
-
-            };
-            //as_server.start();
         }
     };
 
@@ -342,48 +334,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendMessage(String message) {
-        // TODO: code s'executant quand l'utilisateur clique le bouton Send
         // pour envoyer un nouveau message
         server_out.println("SEND " + message);
-//		displayMessage(message);
+
     }
 
 
-
-    //les cartes sur table sont représentés par:   "numDeLaCarte valeurEnCard "
-    private StringBuffer carteSurTableEnstring(){
-        StringBuffer result=new StringBuffer();
-        for(int i=0;i<15;i++){
-            result.append(i+" "+table[i]+" ");
-        }
-        return result;
-    }
-
-
-    private boolean[] deck = new boolean[81];
-    public int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
-    //si la carte vaux -1 elle n'existe pas, cf modification de isSet
-    private HashMap<Integer, Integer> tas = new HashMap<>();    //lie l'adresse au numéro de la carte (1 a 15)
-    private Integer[] listeDesAdresses = new Integer[15];
-    private int nbCarte = 12;
-    private HashMap<Integer, CardDrawable> carteSurTable = new HashMap<Integer, CardDrawable>();
-    private volatile Stack<Integer> selected = new Stack<Integer>();
-
-    Integer trou1;
-    Integer trou2;
-    Integer trou3;
-
-    TextView timerTextView;
-    TextView scoreTextView;
-    TextView debugTextView;
-
-    long startTime = 0;
-
-    long score = -1;
-    boolean add = true;
-
-    Integer addresse;
-    int numeroCarteSet = 0;
 
     //Time opérationel
     //runs without a timer by reposting this handler at the end of the runnable
@@ -422,7 +378,7 @@ public class MainActivity extends AppCompatActivity {
             debugTextView.setText(String.format("%s", debug));
         }
     };
-
+/*
     Handler setHandler = new Handler();
     Runnable setRunnable = new Runnable() {
         @Override
@@ -455,18 +411,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
-
+*/
 
     public void init() {
 
-        set1 = (ImageView) findViewById(R.id.set1);
+        set = (ImageView) findViewById(R.id.Set);
         numeroCarteSet = 1;
-        //setHandler.postDelayed(setRunnable, 1);
-        set2 = (ImageView) findViewById(R.id.set2);
-        numeroCarteSet = 2;
-        //setHandler.postDelayed(setRunnable, 1);
-        set3 = (ImageView) findViewById(R.id.set3);
-        numeroCarteSet = 3;
+
         //setHandler.postDelayed(setRunnable, 1);
         numeroCarteSet = 0;
         scoreTextView = (TextView) findViewById(R.id.score);
@@ -599,7 +550,7 @@ public class MainActivity extends AppCompatActivity {
                 CardDrawable card = carteSurTable.get(id);
                 if (card.getSelected()) {
                     //Si déjà sélectionné on enlève la sélection
-                    selected.remove(new Integer(id));
+                    selected.remove(Integer.valueOf(id));
                     card.isSelected(false);
                     view.invalidate();
                     return;
@@ -727,10 +678,7 @@ public class MainActivity extends AppCompatActivity {
             if (multiJoueur) {
                 server_out.println("POINT " + 1);
             }
-            //setHandler.postDelayed(setRunnable,0);
-            //afficherDernierSet(a, b, c);
-
-
+            afficherDernierSet(a, b, c);
 
             selected.removeAllElements();  // Au cas ou non vide
             if (nbCarte == 15) {
@@ -794,12 +742,11 @@ public class MainActivity extends AppCompatActivity {
         int val1 = table[tas.get(a) - 1];
         int val2 = table[tas.get(b) - 1];
         int val3 = table[tas.get(c) - 1];
-        clearCarte(R.id.set1);
-        clearCarte(R.id.set2);
-        clearCarte(R.id.set3);
-        addCard(R.id.set1, val1);
-        addCard(R.id.set2, val2);
-        addCard(R.id.set3, val3);
+        CardDrawable lastSet = new CardDrawable(val1, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
+        lastSet.drawSet(lastSet.canvas,val1,val2,val3);
+        set.setImageDrawable(lastSet);
+        set.invalidate();
+
     }
 
     public void addCard(int adresse, int val) {
