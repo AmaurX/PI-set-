@@ -24,8 +24,8 @@
     <string name="title_activity_parametre">Parametres</string>
     <string name="ip">192.168.0.0</string>
     <string name="pseudo">monPseudo</string>
-    <string name="pseudonyme">pseudonyme</string>
-    <string name="adresseIp">adresse ip du serveur</string>
+    <string name="pseudonyme">Pseudonyme</string>
+    <string name="adresseIp">Adresse ip du serveur</string>
     <string name="preference_file_key">sharedpreferences</string>
     <string name="restart">false</string>
 

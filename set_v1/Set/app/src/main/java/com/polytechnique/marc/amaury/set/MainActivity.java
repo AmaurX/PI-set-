@@ -1,19 +1,15 @@
 package com.polytechnique.marc.amaury.set;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -22,39 +18,45 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.Stack;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MainActivity extends AppCompatActivity {
 
+    //images view pour afficher le dernier set
     ImageView set1;
     ImageView set2;
     ImageView set3;
+
+    // verrou
     ReentrantLock lock;
+    Condition wait;
+
+    //initialisation de textes d'affichages
     String affichage = "Hello";
     String my_login = "default";
     String ip_adresse = "default";
-    public static AtomicInteger N =new AtomicInteger(0);
+
+    // N est la copie du N du serveur : c'est le numéro du plateau courant associé a l'ensemble des cartes présentes sur le plateau.
+    public static Integer N = 0;
+
+    // outils pour le thread de connection au serveur
     Thread connectionThread;
     static PrintWriter server_out = null;
     static PrintWriter telnet_out = null;
-    //Pour mettre en marche le multijoueur
-
     static Boolean multiJoueur = false;
-    Condition wait;
 
-    private boolean[] deck = new boolean[81];
-    public int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card
+    //tableaux de stockages des valeurs.
+    private boolean[] deck = new boolean[81]; //Deck donne true pour chaque carte posée sur plateau
+    public int[] table = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1};   //lie le numéro de la carte( 1à 15) avec sa valeur en tant que card (k)
     //si la carte vaux -1 elle n'existe pas, cf modification de isSet
-    @SuppressLint("UseSparseArrays")
-    private HashMap<Integer, Integer> tas = new HashMap<>();    //lie l'adresse au numéro de la carte (1 a 15)
-    private Integer[] listeDesAdresses = new Integer[15];
+    private HashMap<Integer, Integer> tas = new HashMap<>();    //lie l'adresse de la carte au numéro de la carte (1 a 15)
+    private Integer[] listeDesAdresses = new Integer[15]; // fait la liste des adresses pour chaque position (inverse de tas)
     private int nbCarte = 12;
-    @SuppressLint("UseSparseArrays")
-    private HashMap<Integer, CardDrawable> carteSurTable = new HashMap<>();
-    private volatile Stack<Integer> selected = new Stack<>();
+    private HashMap<Integer, CardDrawable> carteSurTable = new HashMap<>(); // associe à chaque adresse l'objet CardDrawable correspondant
+    private volatile Stack<Integer> selected = new Stack<>(); //garde une liste des cartes selectionnées
 
+    //Les trois trous (qui permettent de rajouter 3 cartes si besoin)
     Integer trou1;
     Integer trou2;
     Integer trou3;
@@ -63,54 +65,36 @@ public class MainActivity extends AppCompatActivity {
     TextView scoreTextView;
     TextView affichageTextView;
 
-    long startTime = 0;
-
-    long score = -1;
-    boolean add = true;
-
-    Integer addresse;
-    int numeroCarteSet = 0;
-
-
+    //Dans onCreate, on met le code qui ne doit s'executer qu'un seule fois
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        lock = new ReentrantLock();
+        //on initialise dans init() la plupart des variables
         init();
+        //Test match permet de verifier si il y a bien un set, et sinon il rajoute trois cartes.
         testMatch();
-
-        TextView parametre = (TextView)  findViewById(R.id.parametres);
-        parametre.setText(R.string.parametres);
-        affichageTextView = (TextView) findViewById(R.id.affichage);
-        affichage = "on create";
-        affichageHandler.postDelayed(affichageRunnable, 0);
-        final SharedPreferences sharedPref = getActivity().getSharedPreferences(getString(R.string.preference_file_key),0);
-        my_login = sharedPref.getString(getString(R.string.pseudo),getResources().getString(R.string.pseudo));
-        ip_adresse = my_login = sharedPref.getString(getString(R.string.ip),getResources().getString(R.string.ip));
+        // On lance maintenant le thread de connection. Si la connection échoue, le boolean multijoueur est false et tout se fait par l'application en solo. Sinon, c'est le serveur qui prend la main.
         connectionThread = new Thread(connection);
         connectionThread.start();
-        wait = lock.newCondition();
-
-
     }
 
     @Override
     public void onStart() {
         super.onStart();
+        // Lorsque la vue reviens, OnStart() est appelé, et donc il faut recharger l'ip et le pseudo qui ont peut-être changés
         final SharedPreferences sharedPref = getActivity().getSharedPreferences(getString(R.string.preference_file_key),0);
         String restart =  sharedPref.getString(getString(R.string.restart),getResources().getString(R.string.restart));
         my_login = sharedPref.getString(getString(R.string.pseudo),getResources().getString(R.string.pseudo));
         ip_adresse =  sharedPref.getString(getString(R.string.ip),getResources().getString(R.string.ip));
-
+        //Dans PArametreActivity, si on clique sur le bouton "relancer la connection", le paramtrer restart deviens true. Alors on relance la connection et on le passe a false;
         if(restart.equals("true")){
             restartConnection();
             sharedPref.edit().putString(getString(R.string.restart), "false").apply();
         }
-
-
     }
 
+    //Pour relancer la connection, on logout puis on relance le thread connection.
     public void restartConnection(){
         try{
             sendMessage("LOGOUT");
@@ -122,76 +106,73 @@ public class MainActivity extends AppCompatActivity {
         catch (RuntimeException e){
             System.out.println(e.toString());
         }
-
     }
 
-
-
-    // Variables stockant la valeur courante de l'etat memoire et cpu.
-
-    // Objet contenant le code a executer pour mettre a jour la boite
-    // de texte contenant la memoire disponible.
-
-
+    //Permet d'affiche ce qu'on veut en haut de l'application (sert pour le score et le débug)
     void displayMessage(String s) {
         affichage = s;
         runOnUiThread(affichageRunnable);
     }
 
-
-
+    //Le thread connection, qui établit s'il peut la connection au serveur.
     Runnable connection = new Runnable() {
         @Override
         public void run() {
             Socket s;
             try {
-                s = Net.establishConnection(ip_adresse, 1709);   //Marc: 192.168.0.11    Amaury: 192.168.1.15
+                s = Net.establishConnection(ip_adresse, 1709);
                 displayMessage("CONNECTED");
             } catch (RuntimeException e) {
                 displayMessage("Unconnected: " + e.toString());
                 return;
             }
-            System.out.println("débug : après la connection");
-
             PrintWriter s_out = Net.connectionOut(s);
             final BufferedReader s_in = Net.connectionIn(s);
+            // Avant de lancer se connecter, il faut recuperer un vrai pseudo, et pas celui par défaut: on lance l'activité de paramtre.
+            if(my_login.equals(getString(R.string.pseudo))) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Intent intent = new Intent(MainActivity.this, ParametreActivity.class);
+                        startActivity(intent);
+                    }
+                });
+            }
+            //On est connecté, il faut s'identifier
             s_out.println("LOGIN/" + my_login);
             String line;
-            System.out.println("débug : avant de lire une ligne");
+            //on cherche a lire une premiere ligne
             try {
                 line = s_in.readLine();
-                System.out.println("débug : j'ai lu une ligne");
             } catch (IOException e) {
                 throw new RuntimeException("in readLine");
             }
-
-            displayMessage(line);
             Scanner sc = new Scanner(line);
             sc.useDelimiter(" ");
             if (sc.next().equals("Welcome")) {
+                //Dans ce cas, on est connecté et accepté, on passe en mode multijoueur.
                 displayMessage("ACCEPTED");
                 multiJoueur = true;
                 server_out = s_out;
+
+                //On demande au serveur le plateau en cours
                 s_out.println("GAMEPLEASE/");
             }
-            final Thread from_server = new Thread() {
 
+            //Ce thread permet d'attendre en permanance les messages du serveur et de les traiter.
+            final Thread from_server = new Thread() {
+                //Fonction qui traite les messages et actualise l'affichage
                 void traiterMessageServeur(String line) {
-                    if (line == null) {
-                        return;
-                    }
+                    if (line == null) return;
                     Scanner sc = new Scanner(line);
                     sc.useDelimiter("/");
-
                     String message = sc.next();
-
                     switch (message) {
                         case "theGame":
-                            System.out.println("On est dans theGame");
                             int numDeLaCarte;
                             int i = 0;
                             if (sc.hasNext()) {   //Cette étape ne semble aps se faire correctement
-                                N.set(Integer.parseInt(sc.next()));
+                                N=Integer.parseInt(sc.next());
                             } else {
                                 displayMessage("Le game est incomplet");
                             }
@@ -210,14 +191,15 @@ public class MainActivity extends AppCompatActivity {
                                     mettreAJour();
                                 }
                             });
+
+                            //On signal à la condition wait pour reveiller le main thread dans la fonction traiterMulti.
                             selected.empty();
                             lock.lock();
                             wait.signalAll();
                             lock.unlock();
-
                             break;
+
                         case "result": {
-                            System.out.println("On change le score");
                             Integer res = 0;
                             if (sc.hasNext()) {
                                 res = sc.nextInt();
@@ -232,7 +214,6 @@ public class MainActivity extends AppCompatActivity {
 
                                 }
                             });
-
                             break;
                         }
                         case "scores": {
@@ -291,9 +272,7 @@ public class MainActivity extends AppCompatActivity {
                             break;
                         }
                     }
-
                 }
-
                 public void run() {
                     System.out.println("débug : dans le thread from server");
                     String line;
@@ -312,33 +291,24 @@ public class MainActivity extends AppCompatActivity {
                             multiJoueur = false;
                             break;
                         }
-
                     }
                 }
             };
-
-            if(my_login.equals(getString(R.string.pseudo))) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Intent intent = new Intent(MainActivity.this, ParametreActivity.class);
-                        startActivity(intent);
-
-                    }
-                });
-            }
             from_server.start();
-
         }
     };
 
 
-
+    //Lorsque le serveur envoie un nouveau plateau, il faut tout mettre à jour:
     public void mettreAJour(){
         //mettre a jour carteSurTable, nbCartes, trou1 2 et 3, selected;
         int count = 0;
+        for(int i = 0; i<81;i++){
+            deck[i]=false;
+        }
         for(int i = 0; i <15; i++){
             if(table[i]!=-1){
+                deck[kToNumeroDeCarte(table[i])]=true;
                 int adresse = listeDesAdresses[i];
                 ImageView button = (ImageView) findViewById(adresse);
                 CardDrawable nouvelleCard = new CardDrawable(table[i], Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
@@ -349,8 +319,7 @@ public class MainActivity extends AppCompatActivity {
             }
             else{
                 int adresse = listeDesAdresses[i];
-
-                carteSurTable.put(addresse, null);
+                carteSurTable.put(adresse, null);
                 ImageView carte1 = (ImageView) findViewById(adresse);
                 carte1.setImageDrawable(null);
                 carte1.invalidate();
@@ -366,20 +335,16 @@ public class MainActivity extends AppCompatActivity {
                     trou3 = adresse;
                 }
             }
-
         }
     }
 
+    // pour envoyer un nouveau message
     private void sendMessage(String message) {
-        // pour envoyer un nouveau message
-        server_out.println("SEND " + message);
-
+        server_out.println(message);
     }
 
-
-
-    //Time opérationel
-    //runs without a timer by reposting this handler at the end of the runnable
+    //Un handler recursif pour afficher le temps
+    long startTime = 0;
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
         @Override
@@ -388,16 +353,15 @@ public class MainActivity extends AppCompatActivity {
             int seconds = (int) (millis / 1000);
             int minutes = seconds / 60;
             seconds = seconds % 60;
-
             timerTextView.setText(String.format("%d:%02d", minutes, seconds));
-
             timerHandler.postDelayed(this, 500);
         }
     };
 
 
-
-    //Score opérationnel
+    //Un handler pour afficher le score du joueur.
+    long score = -1;
+    boolean add = true;
     Handler scoreHandler = new Handler();
     Runnable scoreRunnable = new Runnable() {
         @Override
@@ -408,6 +372,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    //Pour afficher le texte en haut de l'appli
     Handler affichageHandler = new Handler();
     Runnable affichageRunnable = new Runnable() {
         @Override
@@ -416,27 +381,26 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-
-
-
+    //initialisation avec des cartes au hasard (quitte a les changer a la connexion du serveur)
     public void init() {
-
+        TextView parametre = (TextView)  findViewById(R.id.parametres);
+        parametre.setText(R.string.parametres);
+        affichageTextView = (TextView) findViewById(R.id.affichage);
+        affichage = "on create";
+        affichageHandler.postDelayed(affichageRunnable, 0);
+        final SharedPreferences sharedPref = getActivity().getSharedPreferences(getString(R.string.preference_file_key),0);
+        my_login = sharedPref.getString(getString(R.string.pseudo),getResources().getString(R.string.pseudo));
+        ip_adresse = my_login = sharedPref.getString(getString(R.string.ip),getResources().getString(R.string.ip));
+        lock = new ReentrantLock();
+        wait = lock.newCondition();
         set1 = (ImageView) findViewById(R.id.set1);
-        numeroCarteSet = 1;
-        //setHandler.postDelayed(setRunnable, 1);
         set2 = (ImageView) findViewById(R.id.set2);
-        numeroCarteSet = 2;
-        //setHandler.postDelayed(setRunnable, 1);
         set3 = (ImageView) findViewById(R.id.set3);
-        numeroCarteSet = 3;
-        //setHandler.postDelayed(setRunnable, 1);
-        numeroCarteSet = 0;
         scoreTextView = (TextView) findViewById(R.id.score);
         scoreHandler.postDelayed(scoreRunnable, 0);
         timerTextView = (TextView) findViewById(R.id.time);
         startTime = System.currentTimeMillis();
         timerHandler.postDelayed(timerRunnable, 0);
-
         tas.put(R.id.image1, 1);
         tas.put(R.id.image2, 2);
         tas.put(R.id.image3, 3);
@@ -477,6 +441,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //fonction d'ajout d'une carte
     public void addCard(int adresse) {
         Random tirage = new Random();
         boolean flag = true;
@@ -494,7 +459,6 @@ public class MainActivity extends AppCompatActivity {
         deck[numberOfTheCard] = true;
         table[tas.get(adresse) - 1] = k;
         ImageView button = (ImageView) findViewById(adresse);
-
         CardDrawable nouvelleCard = new CardDrawable(k, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
         nouvelleCard.customDraw();
         button.setImageDrawable(nouvelleCard);
@@ -514,7 +478,6 @@ public class MainActivity extends AppCompatActivity {
         int d = (numeroDeCarte - a - 3 * b - 9 * c) / 27 % 3;
         return ((a + 1) + 4 * (b + 1) + 16 * (c + 1) + 64 * (d + 1));
     }
-
     public int kToNumeroDeCarte(int k) {
         int a = k % 4;
         int b = (k - a) / 4 % 4;
@@ -523,6 +486,7 @@ public class MainActivity extends AppCompatActivity {
         return ((a - 1) + 3 * (b - 1) + 9 * (c - 1) + 27 * (d - 1));
     }
 
+    //vérifie l'existence d'un set
     public boolean isThereMatch() {
         for (int card1 : table) {
             for (int card2 : table) {
@@ -534,21 +498,19 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return false;
-
     }
 
+    //verifie l'existence d'un set (avec isThereMatch) et ajoute s'il le faut 3 cartes
     public void testMatch() {
         if (!isThereMatch()) {
-            add3CartesSinglePlayer();
+            addCard(trou1);
+            addCard(trou2);
+            addCard(trou3);
             nbCarte = 15;
-            if (multiJoueur) {
-                server_out.println("NUMBEROFCARDS " + 15);
-            }
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-
+    //C'est la fonction OnClick des cartes: elle ajoute ou enlève la carte selectionné et appelle les fonctions de test lorsque 3 cartes sont selectionnées.
     public void selection(final View view) {
         lock.lock();
         try {
@@ -596,20 +558,19 @@ public class MainActivity extends AppCompatActivity {
                                 }
                             };
                             traiterMultiHandler.postDelayed(traiterMultiRunnable, 1);
-
-
                         }
-
                     }
                 }
             } finally {
                 return;
             }
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
     }
 
+    //Pour supprimer une carte lorsqu'elle faisait partie d'un bon set selectionné
     public void clearCarte(int addresse) {                                 //Opérationnelle
         ImageView carte1 = (ImageView) findViewById(addresse);
         //C'est quoi cette ligne qui remet les cartes dans le tas: le jeu n'est pas censé s'arreter quand toute les cartes ont été tirés?
@@ -620,10 +581,10 @@ public class MainActivity extends AppCompatActivity {
         carte1.invalidate();
     }
 
+    //Fonction qui envoie un set proposé par le joueur au serveur. Il attend à la fin avec la condition wait (qui est reveillé lorsque le thread From_Server recoit un message et signal)
     public void traiterMatchMulti () throws InterruptedException {
+        //permet l'afichage un court instant des 3 cartes selectionnées
         Thread.sleep(800);
-
-
         String message = "TRY/" + N + "/";
         int u = selected.pop();
         int v = selected.pop();
@@ -637,17 +598,14 @@ public class MainActivity extends AppCompatActivity {
         message+=c+"/";
         selected.empty();
         server_out.println(message);
-
         CardDrawable card = carteSurTable.get(u);
         card.isSelected(false);
         ImageView carte = (ImageView) findViewById(u);
         carte.invalidate();
-
         card = carteSurTable.get(v);
         card.isSelected(false);
         carte = (ImageView) findViewById(v);
         carte.invalidate();
-
         card = carteSurTable.get(w);
         card.isSelected(false);
         carte = (ImageView) findViewById(w);
@@ -655,42 +613,25 @@ public class MainActivity extends AppCompatActivity {
         lock.lock();
         wait.awaitUninterruptibly();
         lock.unlock();
-
-
     }
 
+    //idem mais en solo, donc pas besoin d'attente avec la condition wait
     public void traiterMatch() throws InterruptedException {
         Thread.sleep(1000);
-
         Integer a = selected.pop();
         Integer b = selected.pop();
         Integer c = selected.pop();
-
-
         if (Cards.isSet(table[tas.get(a) - 1], table[tas.get(b) - 1], table[tas.get(c) - 1])) {
-
             //Incrémentation du compteur du joueur et dernier set attrapé
             add = true;
             scoreHandler.postDelayed(scoreRunnable, 0);
-
-
             if (multiJoueur) {
                 server_out.println("POINT " + 1);
             }
             //setHandler.postDelayed(setRunnable,0);
             afficherDernierSet(table[tas.get(a) - 1], table[tas.get(b) - 1], table[tas.get(c) - 1]);
-
-
-
             selected.removeAllElements();  // Au cas ou non vide
             if (nbCarte == 15) {
-
-
-                if (multiJoueur) {
-                    server_out.println("NUMBEROFCARDS " + 12);
-                    server_out.println("WIN " + table[tas.get(a) - 1] + " " + table[tas.get(b) - 1] + " " + table[tas.get(c) - 1]);
-                }
-
                 clearCarte(a);
                 clearCarte(b);
                 clearCarte(c);
@@ -698,8 +639,6 @@ public class MainActivity extends AppCompatActivity {
                 trou2 = b;
                 trou3 = c;
                 nbCarte = 12;
-
-
                 testMatch();
             } else {
                 addCard(a);
@@ -707,19 +646,16 @@ public class MainActivity extends AppCompatActivity {
                 addCard(c);
                 testMatch();
             }
-
         } else {
             selected.removeAllElements();
             CardDrawable card = carteSurTable.get(a);
             card.isSelected(false);
             ImageView carte = (ImageView) findViewById(a);
             carte.invalidate();
-
             card = carteSurTable.get(b);
             card.isSelected(false);
             carte = (ImageView) findViewById(b);
             carte.invalidate();
-
             card = carteSurTable.get(c);
             card.isSelected(false);
             carte = (ImageView) findViewById(c);
@@ -729,23 +665,16 @@ public class MainActivity extends AppCompatActivity {
             //Désincrémentation du compteur du joueur et dernier set attrapé
         }
         testMatch();
-
     }
 
-    public void add3CartesSinglePlayer() {
-        addCard(trou1);
-        addCard(trou2);
-        addCard(trou3);
-    }
-
-    //Non opérationnel
+    //Permet d'afficher en bas de l'ecran le dernier set réussi.
     public void afficherDernierSet(Integer a, Integer b, Integer c) {
-
         addCard(R.id.set1, a);
         addCard(R.id.set2, b);
         addCard(R.id.set3, c);
     }
 
+    //permet d'ajout une carte d'un valeur donnée
     public void addCard(int adresse, int val) {
         ImageView button = (ImageView) findViewById(adresse);
         CardDrawable nouvelleCard = new CardDrawable(val, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
@@ -754,11 +683,13 @@ public class MainActivity extends AppCompatActivity {
         button.invalidate(); //Etape pour réinitialiser une ImageView
     }
 
+    //Fonction OnClick du bouton parametre, qui envoi vers l'autre activité.
     public void pushParameters(final View v) {
         Intent intent = new Intent(MainActivity.this, ParametreActivity.class);
         startActivity(intent);
     }
 
+    //Permet de recuperer l'activité courante (nécessaire apparement pour avoir les sharedPreferences)
     public Context getActivity() {
         return this;
     }
