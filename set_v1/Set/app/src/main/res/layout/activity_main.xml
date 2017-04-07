@@ -10,13 +10,14 @@
     <TableRow android:layout_weight="0.2"
         android:layout_height="match_parent"
         android:layout_width="match_parent"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:measureWithLargestChild="false">
         <TextView
-            android:id="@+id/debug"
+            android:id="@+id/affichage"
             android:layout_width="0dp"
             android:layout_weight="2"
             android:contentDescription="@string/debug"
-            />
+            android:layout_height="match_parent" />
 
         <TextView
             android:id="@+id/parametres"
@@ -190,13 +191,38 @@
                     android:contentDescription="@string/score" />
 
             </TableRow>
-            <TableRow android:layout_weight="8">
+
+            <TableRow android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" >
+
+                <TextView
+                    android:text="Dernier set"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/textView5" />
+            </TableRow>
+
+            <TableRow android:layout_weight="30">
 
                 <ImageView
-
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:id="@+id/Set" />
+                    android:layout_weight="1"
+                    android:contentDescription="@null"
+                    android:id="@+id/set1" />
+                <ImageView
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:contentDescription="@null"
+                    android:id="@+id/set2" />
+                <ImageView
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:contentDescription="@null"
+                    android:id="@+id/set3" />
             </TableRow>
 
         </TableLayout>
