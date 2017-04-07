@@ -552,7 +552,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public boolean isThereMatch() {
-
         for (int card1 : table) {
             for (int card2 : table) {
                 if (card1 == card2) continue;
@@ -574,13 +573,11 @@ public class MainActivity extends AppCompatActivity {
                 server_out.println("NUMBEROFCARDS " + 15);
             }
         }
-
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 
     public void selection(final View view) {
-
         lock.lock();
         try {
             int id = view.getId();
@@ -635,7 +632,6 @@ public class MainActivity extends AppCompatActivity {
             } finally {
                 return;
             }
-
         } finally {
             lock.unlock();
         }
