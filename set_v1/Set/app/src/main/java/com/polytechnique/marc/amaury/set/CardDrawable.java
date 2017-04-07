@@ -194,6 +194,73 @@ class CardDrawable extends Drawable {
 
     }
 
+    public void drawSet(Canvas canvas, int k1, int k2, int k3) {
+
+        canvas.drawColor(Color.WHITE);
+
+
+        Rect b = getBounds();
+        int alpha = paint.getAlpha();
+
+        /* Draw border or background. */
+
+
+        paint.setColor(Color.DKGRAY);
+        paint.setStrokeWidth(1);
+        paint.setAlpha(alpha);
+        paint.setStyle(Paint.Style.STROKE);
+        canvas.drawRect(b, paint);
+
+        int[] set = {k1,k2,k3};
+
+
+        paint.setStrokeWidth(2);
+        /* Pick a color. */
+
+        int count = 0;
+        for(int k : set) {
+
+            switch (Cards.colorOf(k))
+
+            {
+                case 1:
+                    paint.setColor(0xFF882222);
+                    break;
+                case 2:
+                    paint.setColor(0xFF228822);
+                    break;
+                case 3:
+                    paint.setColor(0xFF222288);
+                    break;
+                default:
+                    throw new IllegalStateException("Illegal color characteristic.");
+            }
+
+            paint.setAlpha(alpha);
+
+    /* Draw shapes. */
+            int n = Cards.numberOf(k);
+            float hPadding = b.width()/3 * SHAPE_PADDING;
+            float vPadding = b.height() * SHAPE_PADDING;
+            float h = (b.height() - (n + 1) * vPadding) / 3.0F;
+            float t = b.top + (b.height() - n * h - (n - 1) * vPadding) / 2.0F;
+            for (int i = 0; i < n; ++i) {
+            /*
+             * Reset the Rect r as it may have been overriden in
+             * drawShape(). We also keep the variable t local for the
+             * same reason.
+             */ float largeur = b.width();
+                r.left = b.left + hPadding;
+                r.right = b.right - (largeur/3)*count - hPadding;
+                r.top = t;
+                r.bottom = t + h;
+                t = r.bottom + vPadding;
+                drawShapeWithFilling(canvas,
+                        Cards.fillingOf(k), Cards.shapeOf(k));
+            }
+        }
+
+    }
     /**
      * Draws a single shape with the specified filling.
      *
