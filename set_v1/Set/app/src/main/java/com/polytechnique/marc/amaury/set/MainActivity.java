@@ -38,6 +38,7 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -56,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     //Pour mettre en marche le multijoueur
 
     static Boolean multiJoueur = false;
+    Condition wait;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         ip_adresse = my_login = sharedPref.getString(getString(R.string.ip),getResources().getString(R.string.ip));
         connectionThread = new Thread(connection);
         connectionThread.start();
+        wait = lock.newCondition();
 
 
     }
@@ -194,6 +197,11 @@ public class MainActivity extends AppCompatActivity {
                                 mettreAJour();
                             }
                         });
+                        selected.empty();
+                        lock.lock();
+                        wait.signalAll();
+                        lock.unlock();
+
                     }
                     else if(message.equals("result")){
                         System.out.println("On change le score");
@@ -206,6 +214,8 @@ public class MainActivity extends AppCompatActivity {
                         if(res.equals("-")){
                             add=false;
                             scoreHandler.postDelayed(scoreRunnable, 0);
+                            selected.empty();
+
                         }else if(res.equals("+")){
                             add=true;
                             scoreHandler.postDelayed(scoreRunnable, 0);
@@ -357,7 +367,7 @@ public class MainActivity extends AppCompatActivity {
     private Integer[] listeDesAdresses = new Integer[15];
     private int nbCarte = 12;
     private HashMap<Integer, CardDrawable> carteSurTable = new HashMap<Integer, CardDrawable>();
-    private Stack<Integer> selected = new Stack<Integer>();
+    private volatile Stack<Integer> selected = new Stack<Integer>();
 
     Integer trou1;
     Integer trou2;
@@ -625,6 +635,7 @@ public class MainActivity extends AppCompatActivity {
                             };
                             traiterMultiHandler.postDelayed(traiterMultiRunnable, 1);
 
+
                         }
 
                     }
@@ -679,6 +690,9 @@ public class MainActivity extends AppCompatActivity {
         card.isSelected(false);
         carte = (ImageView) findViewById(w);
         carte.invalidate();
+        lock.lock();
+        wait.awaitUninterruptibly();
+        lock.unlock();
     }
 
     public void traiterMatch() throws InterruptedException {
