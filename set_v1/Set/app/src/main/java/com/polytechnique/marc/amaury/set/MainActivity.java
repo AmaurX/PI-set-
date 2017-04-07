@@ -28,10 +28,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MainActivity extends AppCompatActivity {
 
-    ImageView set;
-
+    ImageView set1;
+    ImageView set2;
+    ImageView set3;
     ReentrantLock lock;
-    String debug = "Hello";
+    String affichage = "Hello";
     String my_login = "default";
     String ip_adresse = "default";
     public static AtomicInteger N =new AtomicInteger(0);
@@ -60,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
     TextView timerTextView;
     TextView scoreTextView;
-    TextView debugTextView;
+    TextView affichageTextView;
 
     long startTime = 0;
 
@@ -81,9 +82,9 @@ public class MainActivity extends AppCompatActivity {
 
         TextView parametre = (TextView)  findViewById(R.id.parametres);
         parametre.setText(R.string.parametres);
-        debugTextView = (TextView) findViewById(R.id.debug);
-        debug = "on create";
-        debugHandler.postDelayed(debugRunnable, 0);
+        affichageTextView = (TextView) findViewById(R.id.affichage);
+        affichage = "on create";
+        affichageHandler.postDelayed(affichageRunnable, 0);
         final SharedPreferences sharedPref = getActivity().getSharedPreferences(getString(R.string.preference_file_key),0);
         my_login = sharedPref.getString(getString(R.string.pseudo),getResources().getString(R.string.pseudo));
         ip_adresse = my_login = sharedPref.getString(getString(R.string.ip),getResources().getString(R.string.ip));
@@ -133,8 +134,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     void displayMessage(String s) {
-        debug = s;
-        runOnUiThread(debugRunnable);
+        affichage = s;
+        runOnUiThread(affichageRunnable);
     }
 
 
@@ -228,6 +229,7 @@ public class MainActivity extends AppCompatActivity {
                                 @Override
                                 public void run() {
                                     scoreTextView.setText(String.format("%s:%02d", "Score", score));
+
                                 }
                             });
 
@@ -251,6 +253,41 @@ public class MainActivity extends AppCompatActivity {
                             }
 
                             displayMessage(res);
+                            break;
+                        }
+                        case "dernierSet":{
+                            int a = 0;
+                            int b = 0;
+                            int c = 0;
+                            if(sc.hasNext()) {
+                                a = sc.nextInt();
+                            }
+                            else{
+                                displayMessage("error dernier set");
+                            }
+                            if(sc.hasNext()) {
+                                b = sc.nextInt();
+                            }
+                            else{
+                                displayMessage("error dernier set");
+                            }
+                            if(sc.hasNext()) {
+                                c = sc.nextInt();
+                            }
+                            else{
+                                displayMessage("error dernier set");
+                            }
+
+                            final int finalA = a;
+                            final int finalB = b;
+                            final int finalC = c;
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    afficherDernierSet(finalA, finalB, finalC);
+                                }
+                            });
+
                             break;
                         }
                     }
@@ -371,53 +408,27 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    Handler debugHandler = new Handler();
-    Runnable debugRunnable = new Runnable() {
+    Handler affichageHandler = new Handler();
+    Runnable affichageRunnable = new Runnable() {
         @Override
         public void run() {
-            debugTextView.setText(String.format("%s", debug));
+            affichageTextView.setText(String.format("%s", affichage));
         }
     };
-/*
-    Handler setHandler = new Handler();
-    Runnable setRunnable = new Runnable() {
-        @Override
-        public void run() {
-            Bitmap bit = Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
-            CardDrawable nouvelleCard = new CardDrawable(171, bit);
-            //CardDrawable nouvelleCard = new CardDrawable(table[tas.get(addresse)]);
 
 
-            switch (numeroCarteSet) {
-                case 0:
-                    break;
-                case 1:
-                    set1.setImageDrawable(nouvelleCard);
-                    nouvelleCard.customDraw();
-                    set1.invalidate();
-                    break;
-                case 2:
-                    set2.setImageDrawable(nouvelleCard);
-                    nouvelleCard.customDraw();
-                    set2.invalidate();
-                    break;
-                case 3:
-                    set3.setImageDrawable(nouvelleCard);
-                    nouvelleCard.customDraw();
-                    set3.invalidate();
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
-*/
+
 
     public void init() {
 
-        set = (ImageView) findViewById(R.id.Set);
+        set1 = (ImageView) findViewById(R.id.set1);
         numeroCarteSet = 1;
-
+        //setHandler.postDelayed(setRunnable, 1);
+        set2 = (ImageView) findViewById(R.id.set2);
+        numeroCarteSet = 2;
+        //setHandler.postDelayed(setRunnable, 1);
+        set3 = (ImageView) findViewById(R.id.set3);
+        numeroCarteSet = 3;
         //setHandler.postDelayed(setRunnable, 1);
         numeroCarteSet = 0;
         scoreTextView = (TextView) findViewById(R.id.score);
@@ -648,6 +659,8 @@ public class MainActivity extends AppCompatActivity {
         lock.lock();
         wait.awaitUninterruptibly();
         lock.unlock();
+
+
     }
 
     public void traiterMatch() throws InterruptedException {
@@ -660,16 +673,6 @@ public class MainActivity extends AppCompatActivity {
 
         if (Cards.isSet(table[tas.get(a) - 1], table[tas.get(b) - 1], table[tas.get(c) - 1])) {
 
-            /*if (!isServeur) {
-                StringBuffer message = new StringBuffer();
-                message.append(tas.get(a) - 1 + " " + table[tas.get(a) - 1] + " ");
-                message.append(tas.get(b) - 1 + " " + table[tas.get(b) - 1] + " ");
-                message.append(tas.get(c) - 1 + " " + table[tas.get(c) - 1] + " ");
-                server_out.println("SEND " + message);
-                //Comment on attend la réponse
-            }*/
-
-
             //Incrémentation du compteur du joueur et dernier set attrapé
             add = true;
             scoreHandler.postDelayed(scoreRunnable, 0);
@@ -678,7 +681,10 @@ public class MainActivity extends AppCompatActivity {
             if (multiJoueur) {
                 server_out.println("POINT " + 1);
             }
-            afficherDernierSet(a, b, c);
+            //setHandler.postDelayed(setRunnable,0);
+            afficherDernierSet(table[tas.get(a) - 1], table[tas.get(b) - 1], table[tas.get(c) - 1]);
+
+
 
             selected.removeAllElements();  // Au cas ou non vide
             if (nbCarte == 15) {
@@ -739,14 +745,9 @@ public class MainActivity extends AppCompatActivity {
     //Non opérationnel
     public void afficherDernierSet(Integer a, Integer b, Integer c) {
 
-        int val1 = table[tas.get(a) - 1];
-        int val2 = table[tas.get(b) - 1];
-        int val3 = table[tas.get(c) - 1];
-        CardDrawable lastSet = new CardDrawable(val1, Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888));
-        lastSet.drawSet(lastSet.canvas,val1,val2,val3);
-        set.setImageDrawable(lastSet);
-        set.invalidate();
-
+        addCard(R.id.set1, a);
+        addCard(R.id.set2, b);
+        addCard(R.id.set3, c);
     }
 
     public void addCard(int adresse, int val) {

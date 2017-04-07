@@ -112,6 +112,8 @@ class CardDrawable extends Drawable {
     }
 
     public void customDraw(){
+        canvas.drawColor(Color.WHITE);
+
         this.draw(this.canvas);
     }
 
@@ -250,7 +252,7 @@ class CardDrawable extends Drawable {
              * drawShape(). We also keep the variable t local for the
              * same reason.
              */ float largeur = b.width();
-                r.left = b.left + hPadding;
+                r.left = b.left + (largeur/3)*(2-count)+ hPadding;
                 r.right = b.right - (largeur/3)*count - hPadding;
                 r.top = t;
                 r.bottom = t + h;
@@ -258,6 +260,7 @@ class CardDrawable extends Drawable {
                 drawShapeWithFilling(canvas,
                         Cards.fillingOf(k), Cards.shapeOf(k));
             }
+            count++;
         }
 
     }
